@@ -6,6 +6,13 @@ motor de modelos estadísticos (Dixon-Coles, Skellam, cópula gaussiana,
 Conway-Maxwell-Poisson, Elo, ensamble apilado...) y calibración/backtest
 de esos modelos.
 
+La interfaz sigue el lenguaje visual de Material 3 (Android): barra de
+navegación inferior fija, hojas que suben desde abajo en vez de
+diálogos centrados, botones de píldora, tipografía Roboto y una
+pantalla de Ajustes con interruptores. En pantallas anchas la app se
+ve dentro de un encuadre de teléfono centrado, en vez de estirarse a
+todo el ancho.
+
 ## Cómo está organizado
 
 La aplicación en sí es una **SPA de React** que corre entera en el

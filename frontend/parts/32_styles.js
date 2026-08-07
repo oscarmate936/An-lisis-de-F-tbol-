@@ -4,61 +4,69 @@
 function Styles() {
   return (
     <style>{`
-@import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&family=Roboto+Mono:wght@400;500;700&family=Roboto+Flex:opsz,wght@10..24,400..800&display=swap');
 
 /* ---------------------------------------------------------------
-   Sistema visual
+   Sistema visual — Material 3 (look de app Android)
    El color aquí no decora: dice algo. El oro es siempre el local,
    el azul siempre el visitante, y el violeta —que no pertenece a
    ningún equipo— es siempre lo que TÚ has marcado. Por eso una
    selección se reconoce de un vistazo entre cien barras de datos.
+   Los mismos nombres de variable de siempre, pero con roles de
+   color, radios y elevación de Material 3: superficies con un
+   ligero tinte del color de marca en vez de sombras duras, formas
+   muy redondeadas y un violeta como "primary" del sistema.
    --------------------------------------------------------------- */
 :root{
-  --pitch:#090C13;         /* fondo de página */
-  --surface:#10141E;       /* tarjeta */
-  --turf:#151B28;          /* controles y cabeceras */
-  --turf2:#1C2434;         /* relleno secundario */
-  --line:#242E42;
-  --line-soft:rgba(36,46,66,.5);
-  --chalk:#ECEFF6; --dim:#94A2BD; --faint:#65728E;
-  --mark:#8E7CFF; --mark-soft:rgba(142,124,255,.13); --mark-ink:#0A0D16;
-  --sodium:#F0B23F; --sodium-soft:rgba(240,178,63,.12);
-  --cool:#4FB6E8; --red:#F0564B; --win:#37C98A; --yellow:#E8C33F;
-  --r:5px; --r-lg:12px; --pill:999px;
-  --sh:0 1px 0 rgba(255,255,255,.03) inset, 0 12px 32px -22px rgba(0,0,0,.9);
-  --gap:18px;
-  --bar:62px;
+  --pitch:#0F1116;         /* fondo de página (M3 surface dim) */
+  --surface:#1A1C23;       /* tarjeta (M3 surface container) */
+  --turf:#212330;          /* controles y cabeceras (surface container high) */
+  --turf2:#2B2E3D;         /* relleno secundario (surface container highest) */
+  --line:#38394A;
+  --line-soft:rgba(56,57,74,.55);
+  --chalk:#E4E1EA; --dim:#A8AABB; --faint:#8C8DA0;
+  --mark:#B6A5FF; --mark-soft:rgba(182,165,255,.16); --mark-ink:#25135E;
+  --sodium:#F0B23F; --sodium-soft:rgba(240,178,63,.14);
+  --cool:#7FD1FF; --red:#FFB4AB; --win:#7FDBA6; --yellow:#E8C33F;
+  --r:14px; --r-lg:24px; --pill:999px;
+  --sh:0 1px 2px rgba(0,0,0,.3), 0 3px 10px -4px rgba(0,0,0,.5);
+  --sh2:0 2px 6px rgba(0,0,0,.35), 0 8px 24px -8px rgba(0,0,0,.6);
+  --gap:14px;
+  --bar:58px;
   --tabh:0px;
   --ctxh:0px;
+  --phone:428px;
 }
-/* Tema claro: la misma pizarra, impresa en papel. */
+/* Tema claro: la misma pizarra, en Material Light. */
 html[data-tema="claro"]{
-  --pitch:#F1EEE7; --surface:#FFFFFF; --turf:#F8F6F1; --turf2:#EBE7DE;
-  --line:#DBD5C8; --line-soft:rgba(219,213,200,.7);
-  --chalk:#131720; --dim:#59637A; --faint:#8891A2;
-  --mark:#5B41D9; --mark-soft:rgba(91,65,217,.09); --mark-ink:#FFFFFF;
-  --sodium:#B57505; --sodium-soft:rgba(181,117,5,.10);
-  --cool:#1F6E96; --red:#C33A2E; --win:#1E7A50; --yellow:#9A7A0B;
-  --sh:0 1px 2px rgba(19,23,32,.05), 0 12px 28px -24px rgba(19,23,32,.5);
+  --pitch:#F6F2FA; --surface:#FFFFFF; --turf:#F1ECF7; --turf2:#E7E0F0;
+  --line:#DED8E8; --line-soft:rgba(222,216,232,.7);
+  --chalk:#1C1B22; --dim:#5C5C6E; --faint:#7C7C8E;
+  --mark:#5B3FE0; --mark-soft:rgba(91,63,224,.10); --mark-ink:#FFFFFF;
+  --sodium:#8A5A00; --sodium-soft:rgba(138,90,0,.10);
+  --cool:#0B6D93; --red:#BA1B1B; --win:#1D7A4C; --yellow:#8A6D00;
+  --sh:0 1px 2px rgba(28,27,34,.08), 0 2px 8px -4px rgba(28,27,34,.12);
+  --sh2:0 2px 6px rgba(28,27,34,.1), 0 10px 26px -12px rgba(28,27,34,.22);
 }
 html[data-tema="claro"] .app{background-image:none}
 html[data-tema="claro"] .mcell{border-color:var(--surface)}
 html[data-tema="claro"] .tri0{background:var(--sodium);color:#fff}
 html[data-tema="claro"] .tri2{background:var(--cool);color:#fff}
 html[data-tema="claro"] .topbar,html[data-tema="claro"] .tabbar,
-html[data-tema="claro"] .builder{background:rgba(241,238,231,.94)}
+html[data-tema="claro"] .builder{background:rgba(246,242,250,.94)}
 html[data-tema="claro"] .input-date{color-scheme:light}
 
 *{box-sizing:border-box}
-.app,.app *,.shell,.shell *{font-family:'Instrument Sans',system-ui,-apple-system,sans-serif}
-.mono,.mono *{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;
-  letter-spacing:-.02em}
-/* La voz de la marca: una grotesca ancha, siempre en cifras grandes
-   y rótulos, nunca en texto corrido. */
+.app,.app *,.shell,.shell *{font-family:'Roboto',system-ui,-apple-system,sans-serif}
+.mono,.mono *{font-family:'Roboto Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;
+  letter-spacing:-.01em}
+/* La voz de la marca: Roboto Flex bien cargada, siempre en cifras
+   grandes y rótulos, nunca en texto corrido — el mismo Roboto que
+   usa el sistema en Android, solo que más ancho y más grueso. */
 .h1,.brand-word,.gate-word,.sb-score,.kpibig,.rule-label,.card-title,.lg-name,
 .cb-p,.bp,.xgval,.metval,.probval,.cb-match-p{
-  font-family:'Archivo','Helvetica Neue',system-ui,sans-serif;
-  font-variation-settings:'wdth' 118}
+  font-family:'Roboto Flex','Roboto',system-ui,sans-serif;
+  font-variation-settings:'wdth' 118,'opsz' 24;font-weight:700}
 
 .app-ctx{--ctxh:43px}
 .app{min-height:100vh;background:var(--pitch);color:var(--chalk);display:flex;flex-direction:column;
@@ -252,7 +260,7 @@ html[data-tema="claro"] .day-on .day-dow{color:rgba(255,255,255,.75)}
 .fx:hover{background:var(--turf)}
 .fx:hover .fx-go{color:var(--mark);transform:translateX(2px)}
 .fx:focus-visible{outline:2px solid var(--mark);outline-offset:-2px}
-.fx-estado{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--dim);text-align:center;
+.fx-estado{font-family:'Roboto Mono',monospace;font-size:11.5px;color:var(--dim);text-align:center;
   display:inline-flex;align-items:center;justify-content:center}
 .fx-estado-vivo{color:var(--red);font-weight:600}
 .fx-estado-raro{color:var(--faint);font-size:10px}
@@ -323,7 +331,7 @@ html[data-tema="claro"] .day-on .day-dow{color:rgba(255,255,255,.75)}
   background:repeating-linear-gradient(90deg,transparent 0 34px,var(--line-soft) 34px 68px)}
 .tick{position:absolute;top:0;height:100%;transform:translateX(-50%)}
 .tick i{display:block;width:1px;height:7px;background:var(--faint);margin:0 auto}
-.tick b{display:block;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--faint);
+.tick b{display:block;font-family:'Roboto Mono',monospace;font-size:9px;color:var(--faint);
   font-weight:400;margin-top:1px}
 .now{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--red);transform:translateX(-50%);
   box-shadow:0 0 8px rgba(240,86,75,.8)}
@@ -361,7 +369,7 @@ html[data-tema="claro"] .day-on .day-dow{color:rgba(255,255,255,.75)}
 /* ---------- comparativas ---------- */
 .vsrow{display:grid;grid-template-columns:62px 1fr 62px;gap:12px;align-items:center;padding:6px 0}
 .vsbody{min-width:0}
-.vsval{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--dim);text-align:right;
+.vsval{font-family:'Roboto Mono',monospace;font-size:13px;color:var(--dim);text-align:right;
   font-variant-numeric:tabular-nums}
 .vsval-a{text-align:left}
 .vsval-lead{color:var(--chalk);font-weight:600}
@@ -1056,7 +1064,7 @@ html[data-tema="claro"] .pitchwrap{background:linear-gradient(180deg,#F6F4EE,#EF
 .cb-swap-btn{flex:0 0 auto}
 .cb-swap-a i{display:flex;flex-direction:column;gap:2px}
 .cb-swap-nota{font-style:normal;font-size:9.5px;color:var(--faint);letter-spacing:.02em;
-  font-family:'Instrument Sans',sans-serif}
+  font-family:'Roboto',sans-serif}
 .cb-quitar{display:flex;align-items:center;gap:14px;border:1px dashed var(--line);
   border-radius:var(--r);padding:12px 14px}
 .cb-quitar-txt{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1;font-size:12.5px}
@@ -1128,7 +1136,7 @@ html[data-tema="claro"] .pitchwrap{background:linear-gradient(180deg,#F6F4EE,#EF
 .atajos{display:grid;grid-template-columns:auto minmax(0,1fr);gap:9px 16px;margin:0;align-items:baseline}
 .atajos dt{margin:0}
 .atajos dd{margin:0;font-size:12.5px;color:var(--dim);line-height:1.45}
-kbd{font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--turf2);
+kbd{font-family:'Roboto Mono',monospace;font-size:11px;background:var(--turf2);
   border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:3px 7px;
   color:var(--chalk);white-space:nowrap}
 .btn-atajos{font-weight:700}
@@ -1165,7 +1173,7 @@ kbd{font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--turf2
 .cb-mal{color:var(--red);font-weight:600}
 .vistas{display:flex;gap:3px;margin:-6px 0 16px}
 .hist-frase{font-size:14px;line-height:1.7;color:var(--dim);margin:0}
-.hist-frase b{color:var(--chalk);font-size:17px;font-family:'JetBrains Mono',monospace}
+.hist-frase b{color:var(--chalk);font-size:17px;font-family:'Roboto Mono',monospace}
 .masfilas{display:flex;align-items:center;justify-content:center;gap:12px;padding:12px;
   font-size:11.5px;color:var(--faint);border-top:1px solid var(--line)}
 
@@ -1225,7 +1233,7 @@ kbd{font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--turf2
   z-index:30;width:max-content;max-width:250px;background:var(--turf2);border:1px solid var(--mark);
   border-radius:var(--r);padding:9px 11px;font-size:11.5px;line-height:1.5;color:var(--dim);
   text-align:left;box-shadow:0 16px 34px -20px rgba(0,0,0,.9);pointer-events:none;
-  font-family:'Instrument Sans',sans-serif}
+  font-family:'Roboto',sans-serif}
 .cb-tip b{display:block;color:var(--chalk);margin-bottom:1px}
 .cb-tip i{display:block;font-style:normal;color:var(--faint);margin-top:4px;font-size:10.5px}
 .cb-link:hover .cb-tip,.cb-link:focus-visible .cb-tip{display:block}
@@ -1295,7 +1303,7 @@ html[data-densidad="comoda"] .betval,html[data-densidad="comoda"] .ldside{paddin
   background:var(--turf2);border:1px solid var(--mark);border-radius:var(--r);padding:12px 30px 12px 13px;
   font-size:11.5px;line-height:1.6;color:var(--dim);text-transform:none;letter-spacing:normal;
   font-weight:400;box-shadow:0 20px 40px -22px rgba(0,0,0,.9);display:block;
-  font-family:'Instrument Sans',sans-serif}
+  font-family:'Roboto',sans-serif}
 .term-pop b{display:block;color:var(--chalk);font-size:12.5px;margin-bottom:4px}
 .term-x{all:unset;cursor:pointer;position:absolute;top:6px;right:8px;color:var(--faint);
   font-size:14px;line-height:1;padding:2px 4px}
@@ -1307,8 +1315,6 @@ html[data-densidad="comoda"] .betval,html[data-densidad="comoda"] .ldside{paddin
 /* ---------- ajustes ---------- */
 .modal-scroll{max-height:min(74vh,620px);overflow-y:auto}
 .modal-scroll .rule:first-child{margin-top:0}
-.ajuste{display:flex;flex-wrap:wrap;align-items:center;gap:10px;justify-content:space-between;
-  padding:7px 0;font-size:12.5px;color:var(--dim)}
 .seg{display:flex;gap:3px}
 .segbtn{all:unset;cursor:pointer;padding:6px 12px;font-size:11.5px;color:var(--dim);
   border:1px solid var(--line);border-radius:var(--r)}
@@ -1398,7 +1404,6 @@ html[data-densidad="comoda"] .betval,html[data-densidad="comoda"] .ldside{paddin
   .modal-fondo{padding:12px;align-items:flex-end}
   .modal{width:100%}
   .modal-scroll{max-height:72vh}
-  .ajuste{justify-content:flex-start}
   .term-pop{position:fixed;left:12px;right:12px;top:auto;bottom:76px;width:auto}
   .fx-frescura{width:100%;justify-content:flex-start}
   .fx-filtros{gap:8px}
@@ -1438,6 +1443,142 @@ html[data-densidad="comoda"] .betval,html[data-densidad="comoda"] .ldside{paddin
 @media (prefers-reduced-motion:reduce){
   *{animation:none!important;transition:none!important}
 }
+
+/* ===============================================================
+   ANDROID SHELL — rediseño Material 3
+   La pizarra deja de comportarse como un panel de escritorio que se
+   encoge en el móvil: pasa a ser, siempre, una app de Android. Barra
+   inferior fija con indicador de píldora, hojas que suben desde
+   abajo en vez de diálogos centrados, botones de píldora, listas de
+   ajustes con icono a la izquierda y un interruptor a la derecha.
+   Este bloque va deliberadamente al final: en un empate de
+   especificidad gana la regla que aparece más abajo en el archivo,
+   así que estas reglas se imponen sobre las suyas propias de arriba
+   sin tener que reescribirlas ni tocar los componentes.
+   =============================================================== */
+
+/* Encuadre de teléfono en pantallas anchas: el escritorio de sobra
+   queda como fondo oscuro, la app vive en una columna del ancho de
+   un móvil, tal como se ve en cualquier maqueta de una app Android. */
+@media (min-width:760px){
+  html,body{background:#0B0B0D}
+  .shell,.app{max-width:var(--phone);margin:0 auto;min-height:100vh;
+    box-shadow:var(--sh2);border-left:1px solid var(--line);border-right:1px solid var(--line)}
+}
+
+/* La navegación de escritorio desaparece: vive siempre abajo, como en
+   cualquier app de Android, y se reserva su alto en todas partes. */
+.nav{display:none!important}
+:root{--tabh:66px}
+
+.tabbar{display:grid;grid-template-columns:repeat(4,1fr);position:fixed;left:0;right:0;bottom:0;
+  z-index:42;max-width:var(--phone);margin:0 auto;background:var(--turf);
+  border-top:1px solid var(--line-soft);padding-bottom:env(safe-area-inset-bottom);
+  box-shadow:0 -2px 14px -6px rgba(0,0,0,.4)}
+.tabbtn{all:unset;box-sizing:border-box;cursor:pointer;position:relative;height:var(--tabh);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  font-size:10.5px;font-weight:500;color:var(--faint);-webkit-tap-highlight-color:transparent}
+.tabbtn .ico{width:22px;height:22px;position:relative;z-index:1;transition:color .15s}
+.tabbtn-on{color:var(--chalk)}
+.tabbtn::before{content:"";position:absolute;top:8px;width:52px;height:28px;border-radius:var(--pill);
+  background:transparent;transition:background .18s}
+.tabbtn-on::before{background:var(--mark)}
+.tabbtn-on .ico{color:var(--mark-ink);position:relative;z-index:1}
+.tabbtn:active{transform:scale(.94)}
+.tabbtn:focus-visible{outline:2px solid var(--mark);outline-offset:-3px;border-radius:var(--r)}
+.tabbadge{position:absolute;top:4px;left:calc(50% + 12px);font-size:9px;font-weight:700;line-height:1;
+  padding:2px 5px;border-radius:var(--pill);background:var(--red);color:#3C0000;font-style:normal}
+
+/* Barra superior: plana y tonal, sin la sensación de panel de control. */
+.topbar{border-bottom:1px solid var(--line-soft);background:var(--surface)!important;
+  backdrop-filter:none}
+.topbar-in{gap:10px;padding:0 16px}
+.brand-sub{display:none}
+.btn-salir{display:none}
+.qpill{min-width:0;padding:6px 10px;border-radius:var(--pill);background:var(--turf)}
+.ctxbar-in{padding:8px 16px}
+.page{padding:16px 16px calc(88px + var(--tabh))}
+
+/* Botones Material: píldora rellena para la acción principal, tonal
+   para las secundarias, texto simple para las discretas. */
+.btn{border-radius:var(--pill);padding:9px 18px;font-size:13.5px;font-weight:500;border-color:transparent}
+.btn-ghost{background:var(--turf2);color:var(--chalk)}
+.btn-ghost:hover{filter:brightness(1.15);border-color:transparent;background:var(--turf2)}
+.btn-primary{background:var(--mark);color:var(--mark-ink);box-shadow:var(--sh)}
+.btn-quiet{border-radius:var(--pill);color:var(--mark)}
+.btn-quiet:hover{background:var(--mark-soft);color:var(--mark)}
+.btn:active,.iconbtn:active,.segbtn:active,.lg-fav:active{transform:scale(.95)}
+
+.iconbtn{width:40px;height:40px;border-radius:var(--pill);border-color:transparent;
+  background:var(--turf2);color:var(--dim)}
+.iconbtn:hover{background:var(--turf2);filter:brightness(1.2);color:var(--chalk);border-color:transparent}
+/* El acceso a la ayuda y el glosario no debería depender del ancho de
+   la pantalla: en el modo Android siempre hay sitio para el icono. */
+.btn-atajos{display:grid!important}
+
+/* Los botones segmentados pasan a ser chips de Material en una
+   píldora tonal, con el segmento activo relleno. */
+.seg{background:var(--turf2);padding:3px;border-radius:var(--pill);gap:0}
+.segbtn{border:none;border-radius:var(--pill);padding:7px 14px}
+.segbtn-on{background:var(--mark);color:var(--mark-ink);box-shadow:none}
+
+/* Campos de texto "filled" de Material: esquina redondeada arriba,
+   línea de acento abajo en vez de un recuadro completo. */
+.input{background:var(--turf2);border:none;border-bottom:2px solid var(--line);
+  border-radius:10px 10px 0 0;padding:9px 12px}
+.input:focus{border-bottom-color:var(--mark);box-shadow:none;background:var(--turf2)}
+
+/* Tarjetas: superficies elevadas de esquina grande, cabecera tonal. */
+.card{border-radius:var(--r-lg);border-color:var(--line-soft)}
+.card-head{background:var(--turf);border-bottom-color:var(--line-soft);
+  border-radius:var(--r-lg) var(--r-lg) 0 0}
+
+/* Hojas inferiores en vez de diálogos centrados: todo lo que antes
+   aparecía en medio de la pantalla ahora sube desde abajo con el
+   tirador de cualquier app de Android, y se queda anclado al borde
+   inferior aunque la pantalla sea ancha. */
+.modal-fondo{align-items:flex-end;padding:0;background:rgba(0,0,0,.55);backdrop-filter:blur(2px)}
+.modal{width:100%;max-width:var(--phone);border-radius:var(--r-lg) var(--r-lg) 0 0;
+  border:none;border-top:1px solid var(--line-soft);box-shadow:0 -14px 40px -14px rgba(0,0,0,.65);
+  padding-top:10px;animation:sube-hoja .22s cubic-bezier(.2,.8,.2,1)}
+.modal::before{content:"";display:block;width:36px;height:4px;border-radius:var(--pill);
+  background:var(--line);margin:0 auto 6px}
+.modal .card-head{border-radius:0;padding-top:2px}
+.modal-scroll{max-height:min(68vh,600px)}
+@keyframes sube-hoja{from{transform:translateY(100%)}}
+
+/* Avisos flotantes y "deshacer": snackbars de Material, siempre por
+   encima de la barra inferior. */
+.aviso-flotante,.undo{bottom:calc(16px + var(--tabh) + env(safe-area-inset-bottom));
+  background:var(--turf2);border-color:var(--line-soft);box-shadow:var(--sh2)}
+.aviso-flotante{border-radius:var(--pill)}
+.undo{border-radius:var(--r)}
+.app-conslip .aviso-flotante,.app-conslip .undo{
+  bottom:calc(84px + var(--tabh) + env(safe-area-inset-bottom))}
+
+/* Listas de ajustes: icono en círculo tonal a la izquierda, título y
+   subtítulo en el centro, control a la derecha — la gramática visual
+   de cualquier pantalla de ajustes de Android. */
+.list-row{display:flex;align-items:center;gap:14px;padding:11px 2px;min-height:56px}
+.list-row-icon{flex:0 0 auto;width:40px;height:40px;border-radius:var(--pill);
+  background:var(--mark-soft);color:var(--mark);display:grid;place-items:center}
+.list-row-icon .ico{width:20px;height:20px}
+.list-row-text{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.list-row-title{font-size:14px;color:var(--chalk);font-weight:500}
+.list-row-sub{font-size:11.5px;color:var(--faint);line-height:1.45}
+.list-row-end{flex:0 0 auto;display:flex;align-items:center}
+
+/* El interruptor: la pieza más reconocible de un ajuste en Android. */
+.switch{all:unset;cursor:pointer;box-sizing:border-box;width:44px;height:26px;border-radius:var(--pill);
+  background:var(--turf2);border:1px solid var(--line);position:relative;flex:0 0 auto;
+  transition:background .15s,border-color .15s}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;
+  background:var(--dim);transition:transform .15s,background .15s}
+.switch-on{background:var(--mark);border-color:var(--mark)}
+.switch-on::after{transform:translateX(18px);background:var(--mark-ink)}
+.switch:focus-visible{outline:2px solid var(--mark);outline-offset:2px}
+.switch:active::after{width:23px}
+.switch-on:active::after{transform:translateX(15px)}
 `}</style>
   );
 }

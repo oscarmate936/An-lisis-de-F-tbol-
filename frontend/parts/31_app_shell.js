@@ -166,6 +166,34 @@ function Ayuda({ onClose }) {
   );
 }
 
+/** Los iconos de la lista de ajustes: el mismo trazo fino que el
+    resto de la app, solo que aquí cada uno vive en su círculo tonal. */
+function AjIco({ name }) {
+  const p = {
+    tema: <><circle cx="9" cy="9" r="3.6" /><path d="M9 1.8v2M9 14.2v2M2.6 9h2M13.4 9h2M4.5 4.5l1.4 1.4M12.1 12.1l1.4 1.4M13.5 4.5l-1.4 1.4M5.9 12.1l-1.4 1.4" /></>,
+    densidad: <><path d="M2.5 5h13M2.5 9h13M2.5 13h8" /></>,
+    letra: <><path d="M4 14 8 3l4 11M5.4 10.5h5.2" /><path d="M12.5 14v-5.2c0-1.1.9-1.6 2-1.6s2 .6 2 1.6V14" /></>,
+    calculo: <><rect x="2.5" y="2.5" width="13" height="13" rx="3" /><path d="M6 9h6M9 6v6" /></>,
+    copia: <><path d="M9 2.5v9M9 11.5 5.8 8.3M9 11.5l3.2-3.2" /><path d="M3 12.5v1.6c0 .8.7 1.4 1.5 1.4h9c.8 0 1.5-.6 1.5-1.4v-1.6" /></>,
+    cuenta: <><circle cx="9" cy="6.2" r="3.2" /><path d="M2.8 15.2c.9-3 3.2-4.6 6.2-4.6s5.3 1.6 6.2 4.6" /></>,
+  }[name];
+  return (
+    <svg className="ico" viewBox="0 0 18 18" fill="none" stroke="currentColor"
+      strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {p}
+    </svg>
+  );
+}
+
+/** Un interruptor de Android: nada de casillas, un botón que se
+    desliza y dice de un vistazo si algo está activado. */
+function Switch({ on, onChange, label }) {
+  return (
+    <button type="button" role="switch" aria-checked={on} aria-label={label}
+      className={"switch" + (on ? " switch-on" : "")} onClick={() => onChange(!on)} />
+  );
+}
+
 /** Ajustes: aspecto, copia de seguridad y cuenta. En el móvil es
     además el único sitio desde donde se puede salir. */
 function Ajustes({ onClose, account, meta, tema, setTema, aspecto, setAspecto, onSalir }) {
@@ -195,10 +223,11 @@ function Ajustes({ onClose, account, meta, tema, setTema, aspecto, setAspecto, o
     } catch (e) { setErr(e.message); }
   }
 
-  const opcion = (campo, valor, etiqueta) => (
+  const opcion = (campo, valor, etiqueta, size, aria) => (
     <button key={valor}
       className={"segbtn" + (aspecto[campo] === valor ? " segbtn-on" : "")}
-      onClick={() => setAspecto(campo, valor)}>{etiqueta}</button>
+      style={size ? { fontSize: size } : undefined}
+      aria-label={aria || etiqueta} onClick={() => setAspecto(campo, valor)}>{etiqueta}</button>
   );
 
   return (
@@ -210,48 +239,60 @@ function Ajustes({ onClose, account, meta, tema, setTema, aspecto, setAspecto, o
         </div>
         <div className="card-body modal-scroll">
           <div className="rule"><span className="rule-label">Aspecto</span><span className="rule-line" /></div>
-          <div className="ajuste">
-            <span>Tema</span>
-            <div className="seg">
-              <button className={"segbtn" + (tema === "oscuro" ? " segbtn-on" : "")}
-                onClick={() => setTema("oscuro")}>Oscuro</button>
-              <button className={"segbtn" + (tema === "claro" ? " segbtn-on" : "")}
-                onClick={() => setTema("claro")}>Claro</button>
-            </div>
+          <div className="list-row">
+            <span className="list-row-icon"><AjIco name="tema" /></span>
+            <span className="list-row-text">
+              <span className="list-row-title">Tema oscuro</span>
+              <span className="list-row-sub">{tema === "oscuro" ? "Activado" : "Desactivado"}</span>
+            </span>
+            <span className="list-row-end">
+              <Switch on={tema === "oscuro"} label="Tema oscuro"
+                onChange={(v) => setTema(v ? "oscuro" : "claro")} />
+            </span>
           </div>
-          <div className="ajuste">
-            <span>Densidad</span>
-            <div className="seg">
-              {opcion("densidad", "compacta", "Compacta")}
-              {opcion("densidad", "comoda", "Cómoda")}
-            </div>
+          <div className="list-row">
+            <span className="list-row-icon"><AjIco name="densidad" /></span>
+            <span className="list-row-text">
+              <span className="list-row-title">Densidad cómoda</span>
+              <span className="list-row-sub">Más aire entre filas y tarjetas</span>
+            </span>
+            <span className="list-row-end">
+              <Switch on={aspecto.densidad === "comoda"} label="Densidad cómoda"
+                onChange={(v) => setAspecto("densidad", v ? "comoda" : "compacta")} />
+            </span>
           </div>
-          <div className="ajuste">
-            <span>Tamaño de letra</span>
-            <div className="seg">
-              {opcion("letra", "pequena", "Pequeña")}
-              {opcion("letra", "normal", "Normal")}
-              {opcion("letra", "grande", "Grande")}
-            </div>
+          <div className="list-row">
+            <span className="list-row-icon"><AjIco name="letra" /></span>
+            <span className="list-row-text">
+              <span className="list-row-title">Tamaño de letra</span>
+            </span>
+            <span className="list-row-end">
+              <div className="seg">
+                {opcion("letra", "pequena", "A", "12px", "Letra pequeña")}
+                {opcion("letra", "normal", "A", "16px", "Letra normal")}
+                {opcion("letra", "grande", "A", "20px", "Letra grande")}
+              </div>
+            </span>
           </div>
 
           <div className="rule"><span className="rule-label">Cálculo</span><span className="rule-line" /></div>
-          <div className="ajuste">
-            <span>Precisión</span>
-            <div className="seg">
-              <button className={"segbtn" + (!completo ? " segbtn-on" : "")}
-                onClick={() => { ponCalculoCompleto(false); setCompleto(false); }}>Ajustada</button>
-              <button className={"segbtn" + (completo ? " segbtn-on" : "")}
-                onClick={() => { ponCalculoCompleto(true); setCompleto(true); }}>Completa</button>
-            </div>
+          <div className="list-row">
+            <span className="list-row-icon"><AjIco name="calculo" /></span>
+            <span className="list-row-text">
+              <span className="list-row-title">Precisión completa</span>
+              <span className="list-row-sub">
+                {EQUIPO_LENTO
+                  ? (completo
+                    ? "Ensamble con todo el historial y 20.000 simulaciones: puede tardar entre veinte y cuarenta segundos en este aparato, sin bloquear la pantalla."
+                    : "Ensamble con las últimas 320 jornadas y 6.000 simulaciones. El 1X2 puede moverse unas seis décimas frente al cálculo completo.")
+                  : "Este equipo va sobrado: ya se usa el cálculo entero en los dos modos."}
+              </span>
+            </span>
+            <span className="list-row-end">
+              <Switch on={completo} label="Precisión completa"
+                onChange={(v) => { ponCalculoCompleto(v); setCompleto(v); }} />
+            </span>
           </div>
-          <p className="foot" style={{ marginTop: 0 }}>
-            {EQUIPO_LENTO
-              ? (completo
-                ? "El ensamble se entrena con todo el historial y las combinadas con jugadores usan 20.000 simulaciones: los mismos números que en un ordenador. En este aparato el ensamble puede tardar entre veinte y cuarenta segundos, con el porcentaje a la vista, pero la pantalla no se bloquea. El modelo Dixon-Coles y los mercados que salen de la matriz son idénticos en los dos modos."
-                : "En este aparato el ensamble se entrena con las últimas 320 jornadas y reajusta cada 25, y las combinadas con jugadores simulan 6.000 partidos. El 1X2 del ensamble puede moverse unas seis décimas frente al cálculo completo; el Dixon-Coles y los mercados de la matriz no cambian.")
-              : "Este equipo va sobrado, así que ya se usa el cálculo entero en los dos modos."}
-          </p>
 
           <div className="rule"><span className="rule-label">Copia de seguridad</span><span className="rule-line" /></div>
           <p className="foot" style={{ marginTop: 0 }}>
@@ -277,14 +318,16 @@ function Ajustes({ onClose, account, meta, tema, setTema, aspecto, setAspecto, o
           {err && <div className="alert">{err}</div>}
 
           <div className="rule"><span className="rule-label">Cuenta</span><span className="rule-line" /></div>
-          <dl className="atajos">
-            <dt className="dim">Plan</dt>
-            <dd>{account?.subscription?.plan || "—"}</dd>
-            <dt className="dim">Correo</dt>
-            <dd>{account?.account?.email || "—"}</dd>
-            <dt className="dim">Esta sesión</dt>
-            <dd>{meta.calls} peticiones a la API · {meta.hits} servidas desde la caché</dd>
-          </dl>
+          <div className="list-row">
+            <span className="list-row-icon"><AjIco name="cuenta" /></span>
+            <span className="list-row-text">
+              <span className="list-row-title">{account?.account?.email || "—"}</span>
+              <span className="list-row-sub">
+                Plan {account?.subscription?.plan || "—"} · {meta.calls} peticiones a la API ·{" "}
+                {meta.hits} servidas desde la caché
+              </span>
+            </span>
+          </div>
           <div className="toolbar" style={{ marginTop: 12 }}>
             <button className="btn btn-ghost" onClick={onSalir}>Salir y olvidar la clave</button>
           </div>
