@@ -573,6 +573,18 @@ function Combinada({ api, onOpen }) {
     }
   }
 
+  /* El hoja de compartir nativa solo existe en navegadores con Web
+     Share (sobre todo Android); donde no la haya, el botón ni
+     aparece y "Copiar" sigue siendo el camino. */
+  async function compartir() {
+    if (!res) return;
+    try {
+      await navigator.share({ title: nombreActivo || "Combinada", text: textoCombinada(res, nombreActivo) });
+    } catch (e) {
+      // Cancelar la hoja de compartir también lanza AbortError: no es un fallo que avisar.
+    }
+  }
+
   async function abrir(fx) {
     setAbriendo(fx); setErr(null);
     try {
@@ -652,6 +664,9 @@ function Combinada({ api, onOpen }) {
             <button className="btn btn-quiet" onClick={copiar}>
               {copiado ? "Copiado ✓" : "Copiar"}
             </button>
+            {typeof navigator !== "undefined" && navigator.share && (
+              <button className="btn btn-quiet" onClick={compartir}>Compartir</button>
+            )}
             <button className="btn btn-quiet" onClick={() => downloadText(
               "combinada.csv",
               toCSV(grupos.flatMap((g) => g.picks.map((p) => ({ ...p, g }))), [

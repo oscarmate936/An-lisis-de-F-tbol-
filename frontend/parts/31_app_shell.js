@@ -118,6 +118,7 @@ const ATAJOS = [
   ["P", "Volver al partido abierto"],
   ["E", "Volver al equipo abierto"],
   ["B", "Buscar en la cartelera"],
+  ["Ctrl/⌘ + K", "Buscador global: ir a cualquier sitio o repetir una búsqueda"],
   ["M", "Abrir y cerrar el menú"],
   ["T", "Cambiar entre tema claro y oscuro"],
   ["Z", "Deshacer lo último que hayas quitado"],
@@ -175,7 +176,7 @@ function Ayuda({ onClose }) {
     ajustes, tema y el atajo a las ligas fijadas. Los cuatro accesos
     más usados van en tarjetas grandes (menú rectangular); lo demás,
     en una lista simple debajo. */
-function Drawer({ onClose, account, tema, cambiarTema, onAyuda, onAjustes, onLigas }) {
+function Drawer({ onClose, account, tema, cambiarTema, onAyuda, onAjustes, onLigas, onBuscar }) {
   const tile = (name, label, onClick) => (
     <button className="drawer-tile" onClick={() => { onClick(); onClose(); }}>
       <span className="drawer-tile-icon"><AjIco name={name} /></span>
@@ -193,6 +194,7 @@ function Drawer({ onClose, account, tema, cambiarTema, onAyuda, onAjustes, onLig
           </span>
         </div>
         <div className="drawer-tiles">
+          {tile("buscar", "Buscar", onBuscar)}
           {tile("ajustes", "Ajustes", onAjustes)}
           {tile("ayuda", "Ayuda", onAyuda)}
           {tile("ligas", "Mis ligas", onLigas)}
@@ -218,6 +220,7 @@ function AjIco({ name }) {
     ajustes: <><path d="M9 2v2.2M9 13.8V16M16 9h-2.2M4.2 9H2M13.5 4.5l-1.5 1.5M5.5 12l-1.5 1.5M13.5 13.5 12 12M5.5 6 4 4.5" /><circle cx="9" cy="9" r="3" /></>,
     ayuda: <><circle cx="9" cy="9" r="6.5" /><path d="M6.9 7.1c.2-1.2 1.1-2 2.3-2 1.3 0 2.3.9 2.3 2 0 1.6-2.1 1.7-2.1 3.4" /><circle cx="9" cy="13" r=".2" fill="currentColor" /></>,
     ligas: <><path d="M5 2.5h8v5.2c0 2.2-1.8 4-4 4s-4-1.8-4-4V2.5Z" /><path d="M5 4H2.7c0 2 1 3.3 2.6 3.6M13 4h2.3c0 2-1 3.3-2.6 3.6" /><path d="M9 11.7V15M6.3 15.5h5.4" /></>,
+    buscar: <><circle cx="8" cy="8" r="5.2" /><path d="M11.8 11.8 16 16" /></>,
   }[name];
   return (
     <svg className="ico" viewBox="0 0 18 18" fill="none" stroke="currentColor"
@@ -416,6 +419,59 @@ function Deshacer() {
   );
 }
 
+/** Buscador global (Ctrl/Cmd+K): un mismo cajón para saltar a
+    cualquier sección, repetir una búsqueda reciente o escribir un
+    equipo nuevo directamente — sin tener que ir primero a la
+    cartelera para buscar ahí. */
+function Paleta({ onClose, acciones, recientes, onBuscar }) {
+  const [q, setQ] = useState("");
+  const inputRef = useRef(null);
+  useEffect(() => { inputRef.current?.focus(); }, []);
+
+  const t = q.trim().toLowerCase();
+  const accionesFiltradas = t ? acciones.filter((a) => a.etiqueta.toLowerCase().includes(t)) : acciones;
+  const recientesFiltrados = t ? recientes.filter((r) => r.toLowerCase().includes(t)) : recientes;
+  const nada = t && accionesFiltradas.length === 0 && recientesFiltrados.length === 0;
+
+  return (
+    <div className="modal-fondo paleta-fondo" onClick={onClose} role="dialog" aria-label="Buscador">
+      <div className="paleta" onClick={(e) => e.stopPropagation()}>
+        <input
+          ref={inputRef} className="input paleta-input" placeholder="Ir a una sección o buscar un equipo…"
+          value={q} onChange={(e) => setQ(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") { onClose(); return; }
+            if (e.key === "Enter" && q.trim()) { onBuscar(q.trim()); onClose(); }
+          }}
+        />
+        <div className="paleta-lista">
+          {recientesFiltrados.length > 0 && (
+            <>
+              <div className="paleta-grupo">Recientes</div>
+              {recientesFiltrados.map((r) => (
+                <button key={r} className="paleta-item" onClick={() => { onBuscar(r); onClose(); }}>
+                  <span className="paleta-item-ico" aria-hidden="true">↺</span>{r}
+                </button>
+              ))}
+            </>
+          )}
+          {accionesFiltradas.length > 0 && (
+            <>
+              <div className="paleta-grupo">Ir a</div>
+              {accionesFiltradas.map((a) => (
+                <button key={a.etiqueta} className="paleta-item" onClick={() => { a.onClick(); onClose(); }}>
+                  <span className="paleta-item-ico" aria-hidden="true">{a.tecla || "→"}</span>{a.etiqueta}
+                </button>
+              ))}
+            </>
+          )}
+          {nada && <div className="paleta-vacio">Nada coincide con “{q}”. Pulsa Intro para buscarlo en la cartelera.</div>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function App() {
   /* "auto" sigue al sistema operativo; oscuro/claro son elecciones
      explícitas que lo pisan. Lo que de verdad pinta la pantalla es
@@ -454,6 +510,8 @@ function App() {
   const menuBtnRef = useRef(null);
   const fabBtnRef = useRef(null);
   const [coach, setCoach] = useState(false);
+  const [paleta, setPaleta] = useState(false);
+  const [recientes, setRecientes] = useState(() => recientesLeer());
   const [enLinea, setEnLinea] = useState(() =>
     typeof navigator === "undefined" || navigator.onLine !== false);
   const [aspecto, setAspectoRaw] = useState(() => {
@@ -637,16 +695,41 @@ function App() {
   };
   const openFixture = (f) => { setFixture(f); irA("match"); };
 
+  /* Ir a la cartelera y dejar ya escrita la búsqueda, tanto desde el
+     buscador global como desde una reciente: la caja de Fixtures es
+     la dueña de su propio estado, así que se le escribe el valor por
+     fuera con el mismo truco que ya usaba el atajo "B" para enfocarla. */
+  const irYBuscar = useCallback((termino) => {
+    setRecientes(recientesGuardar(termino));
+    irA("fixtures");
+    setTimeout(() => {
+      const caja = document.querySelector(".input-search");
+      if (!caja) return;
+      const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+      setter.call(caja, termino);
+      caja.dispatchEvent(new Event("input", { bubbles: true }));
+      caja.focus();
+    }, 40);
+  }, [irA]);
+
   /* Atajos: en escritorio se navega mucho más rápido con una tecla que
      buscando el ratón, y esta app se usa saltando entre partidos. */
   useEffect(() => {
     if (!account) return;
     const onKey = (e) => {
+      /* El buscador global funciona desde cualquier sitio, igual que
+         en cualquier app o editor con paleta de comandos, incluso con
+         el foco metido en un campo de texto. */
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setPaleta((v) => !v);
+        return;
+      }
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const t = e.target;
       if (t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable)) return;
       if (e.key === "Escape") {
-        setAyuda(false); setAjustes(false); setDrawer(false);
+        setAyuda(false); setAjustes(false); setDrawer(false); setPaleta(false);
         if (coach) { try { localStorage.setItem("onboarding:v1", "1"); } catch (er) { /* nada */ } setCoach(false); }
         return;
       }
@@ -671,6 +754,26 @@ function App() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [account, fixture, teamCtx, cambiarTema, irA, coach]);
+
+  /* Todos los hooks van antes de cualquier return: booting y "sin
+     cuenta" también son renders de este mismo componente, y saltarse
+     hooks entre uno y otro rompe el orden que React necesita. */
+  const paletaAcciones = useMemo(() => [
+    { etiqueta: "Ir a Cartelera", tecla: "1", onClick: () => irA("fixtures") },
+    { etiqueta: "Ir a Competición", tecla: "2", onClick: () => irA("league") },
+    { etiqueta: "Ir a Calibración", tecla: "3", onClick: () => irA("calibracion") },
+    { etiqueta: "Ir a Combinada", tecla: "4", onClick: () => irA("combinada") },
+    { etiqueta: "Abrir menú", tecla: "M", onClick: () => setDrawer(true) },
+    { etiqueta: "Abrir ajustes", onClick: () => setAjustes(true) },
+    { etiqueta: "Ayuda y atajos", tecla: "?", onClick: () => setAyuda(true) },
+    { etiqueta: temaAplicado === "claro" ? "Cambiar a tema oscuro" : "Cambiar a tema claro", tecla: "T", onClick: cambiarTema },
+  ], [irA, temaAplicado, cambiarTema]);
+
+  /* Entre Cartelera, Competición y Calibración se puede deslizar en
+     horizontal, como entre pestañas de cualquier app de Android; la
+     Combinada no entra en el gesto porque no es una pestaña más,
+     igual que tampoco lo es en la barra inferior. */
+  const swipe = useSwipeTabs(["fixtures", "league", "calibracion"], view, irA);
 
   if (booting)
     return (
@@ -780,7 +883,9 @@ function App() {
           </div>
         )}
 
-        <main className="main">
+        <main className="main" style={swipe.style}
+          onPointerDown={swipe.onPointerDown} onPointerMove={swipe.onPointerMove}
+          onPointerUp={swipe.onPointerUp} onPointerCancel={swipe.onPointerCancel}>
           <ErrorBoundary key={view + (fixture ? ":" + fixture.fixture.id : "")}
             onBack={() => { irA("fixtures"); setFixture(null); }}>
           {view === "fixtures" && (
@@ -811,6 +916,7 @@ function App() {
 
         <Deshacer />
         <Aviso />
+        <VolverArriba />
         {ayuda && <Ayuda onClose={() => setAyuda(false)} />}
         {ajustes && (
           <Ajustes
@@ -828,7 +934,12 @@ function App() {
             onAyuda={() => setAyuda(true)}
             onAjustes={() => setAjustes(true)}
             onLigas={() => irA("league")}
+            onBuscar={() => setPaleta(true)}
           />
+        )}
+        {paleta && (
+          <Paleta onClose={() => setPaleta(false)} acciones={paletaAcciones}
+            recientes={recientes} onBuscar={irYBuscar} />
         )}
 
         {/* La navegación vive siempre abajo, al pulgar: tres secciones

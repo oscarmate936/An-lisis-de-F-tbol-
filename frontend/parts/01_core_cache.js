@@ -4,6 +4,25 @@ const storage = {
   async delete(k){ localStorage.removeItem(k); }
 };
 const { useState, useEffect, useRef, useMemo, useCallback } = React;
+const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/* ---------- búsquedas recientes ---------- */
+const RECIENTES_KEY = "recientes:v1";
+function recientesLeer() {
+  try {
+    const j = JSON.parse(localStorage.getItem(RECIENTES_KEY) || "[]");
+    return Array.isArray(j) ? j.filter((x) => typeof x === "string") : [];
+  } catch (e) { return []; }
+}
+function recientesGuardar(termino) {
+  const t = (termino || "").trim();
+  if (!t) return recientesLeer();
+  try {
+    const l = [t, ...recientesLeer().filter((x) => x.toLowerCase() !== t.toLowerCase())].slice(0, 8);
+    localStorage.setItem(RECIENTES_KEY, JSON.stringify(l));
+    return l;
+  } catch (e) { return recientesLeer(); }
+}
 
 /* ============================================================
    PIZARRA — Terminal de análisis de partidos
@@ -179,15 +198,31 @@ function makeApi(key, onMeta) {
       e.offline = true;
       throw e;
     }
+    /* Un corte de red de medio segundo no debería convertirse en un
+       error para quien mira la pantalla: se reintenta un par de veces
+       con espera creciente antes de rendirse. Los fallos que no
+       mejoran reintentando (clave inválida, cuota agotada, límite por
+       minuto) se resuelven más abajo, fuera de este bucle. */
     let res;
-    try {
-      res = await fetch(`${BASE}/${path}${qs ? "?" + qs : ""}`, {
-        headers: { "x-apisports-key": key },
-      });
-    } catch (e) {
-      throw new Error(
-        "No se pudo alcanzar la API. Revisa tu conexión o si el navegador está bloqueando la petición."
-      );
+    for (let intento = 1; ; intento++) {
+      try {
+        res = await fetch(`${BASE}/${path}${qs ? "?" + qs : ""}`, {
+          headers: { "x-apisports-key": key },
+        });
+      } catch (e) {
+        if (intento >= 3) {
+          throw new Error(
+            "No se pudo alcanzar la API. Revisa tu conexión o si el navegador está bloqueando la petición."
+          );
+        }
+        await esperar(400 * 2 ** (intento - 1));
+        continue;
+      }
+      if (res.status >= 500 && res.status !== 501 && intento < 3) {
+        await esperar(400 * 2 ** (intento - 1));
+        continue;
+      }
+      break;
     }
     onMeta({
       cached: false,

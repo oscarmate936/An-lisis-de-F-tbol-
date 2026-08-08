@@ -368,6 +368,101 @@ function Coachmarks({ pasos, onSalir }) {
   );
 }
 
+/** Si donde empieza el gesto ya hay algo que se desliza en horizontal
+    (la tira de días, una tabla ancha, la rejilla de familias...), se
+    cede el paso: solo se secuestra el arrastre cuando de verdad no
+    hay nada debajo que lo necesite más. */
+function tieneScrollHorizontal(el) {
+  let n = el;
+  while (n && n !== document.body) {
+    if (n.scrollWidth > n.clientWidth + 2) {
+      const cs = getComputedStyle(n);
+      if (cs.overflowX === "auto" || cs.overflowX === "scroll") return true;
+    }
+    n = n.parentElement;
+  }
+  return false;
+}
+
+/** Deslizar en horizontal para cambiar de pestaña, el mismo gesto que
+    cualquier carrusel o visor de pestañas de Android. Solo con el
+    dedo (el ratón ya tiene la barra inferior y las teclas 1-3), y
+    solo cuando el gesto no arranca sobre algo que ya se desliza. */
+function useSwipeTabs(orden, actual, ir) {
+  const [dx, setDx] = useState(0);
+  const [activo, setActivo] = useState(false);
+  const arrastre = useRef(null);
+  const idx = orden.indexOf(actual);
+
+  const onPointerDown = (e) => {
+    if (e.pointerType !== "touch" || idx < 0) return;
+    if (tieneScrollHorizontal(e.target)) return;
+    arrastre.current = { x: e.clientX, y: e.clientY, decidido: false, dx: 0 };
+  };
+  const onPointerMove = (e) => {
+    const a = arrastre.current;
+    if (!a) return;
+    const ddx = e.clientX - a.x, ddy = e.clientY - a.y;
+    if (!a.decidido) {
+      if (Math.abs(ddx) < 24 && Math.abs(ddy) < 24) return;
+      if (Math.abs(ddy) > Math.abs(ddx) * 1.3) { arrastre.current = null; return; }
+      a.decidido = true;
+      setActivo(true);
+    }
+    const primero = idx <= 0, ultimo = idx >= orden.length - 1;
+    /* Se guarda también en la propia referencia, no solo en el estado:
+       con eventos que llegan pegados (un gesto rápido puede terminar
+       antes de que React pinte el último movimiento) `soltar` no
+       puede fiarse de un `dx` de React que quizá aún no se ha
+       actualizado, así que lee el valor de aquí, siempre al día. */
+    a.dx = (primero && ddx > 0) || (ultimo && ddx < 0) ? ddx * 0.35 : ddx;
+    setDx(a.dx);
+  };
+  const soltar = () => {
+    const a = arrastre.current;
+    arrastre.current = null;
+    setActivo(false);
+    setDx(0);
+    if (!a?.decidido) return;
+    const UMBRAL = 72;
+    if (a.dx <= -UMBRAL && idx < orden.length - 1) { toque(10); ir(orden[idx + 1]); }
+    else if (a.dx >= UMBRAL && idx > 0) { toque(10); ir(orden[idx - 1]); }
+  };
+
+  return {
+    onPointerDown, onPointerMove, onPointerUp: soltar, onPointerCancel: soltar,
+    style: activo
+      ? { transform: `translateX(${dx}px)`, transition: "none" }
+      : { transform: undefined, transition: "transform .2s cubic-bezier(.2,.8,.2,1)" },
+  };
+}
+
+/** Volver al principio de la pantalla de un toque, en vez de arrastrar
+    el dedo por una lista larga de partidos o de temporadas. Solo
+    aparece cuando de verdad hay algo que recorrer. */
+function VolverArriba() {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setVisible((document.scrollingElement?.scrollTop || 0) > 640);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  if (!visible) return null;
+  return (
+    <button className="volver-arriba" aria-label="Volver arriba"
+      onClick={() => {
+        toque(8);
+        document.scrollingElement?.scrollTo({ top: 0, behavior: "smooth" });
+      }}>
+      <svg viewBox="0 0 18 18" width="18" height="18" fill="none" stroke="currentColor"
+        strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M4.5 11.5L9 6.5l4.5 5" />
+      </svg>
+    </button>
+  );
+}
+
 function Crest({ src, alt, size = 26 }) {
   return src ? (
     <img className="crest" src={src} alt={alt} width={size} height={size} loading="lazy" />

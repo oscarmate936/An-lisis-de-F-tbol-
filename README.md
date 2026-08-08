@@ -60,6 +60,25 @@ Y de comportamiento, no solo de estilo:
   servir archivos estáticos (`app/static/`) no alcanza a cubrir la
   página real de la app. Sin ese service worker no hay ventana propia
   sin barra de navegador, solo un acceso directo con buen icono.
+- **Buscador global** (Ctrl/Cmd+K, o el icono "Buscar" del cajón): un
+  mismo cajón para saltar a cualquier sección, repetir una búsqueda
+  reciente o escribir un equipo nuevo y caer directo en la cartelera
+  con esa búsqueda ya hecha.
+- **Búsquedas recientes**: la cartelera recuerda las últimas búsquedas
+  y las ofrece en cuanto se toca la caja vacía, sin tener que escribir
+  de nuevo.
+- **Compartir combinada** con la hoja nativa de compartir del sistema
+  (Web Share API) donde el navegador la ofrezca — sobre todo Android;
+  donde no exista, sigue estando "Copiar" al portapapeles.
+- **Deslizar entre pestañas**: Cartelera, Competición y Calibración se
+  pueden recorrer arrastrando el dedo en horizontal, como en cualquier
+  visor de pestañas de Android, cediendo el gesto sin pelear cuando
+  hay algo debajo que ya se desliza (la tira de días, una tabla ancha).
+- **Volver arriba**: un botón flotante aparece al bajar en una lista
+  larga y sube de un toque, sin tener que arrastrar el dedo de vuelta.
+- **Reintentos automáticos**: un corte de red de medio segundo ya no
+  se convierte en un error en pantalla — la petición se reintenta un
+  par de veces con espera creciente antes de rendirse.
 
 Y de accesibilidad: todo lo interactivo tiene un anillo de foco visible
 al navegar con teclado (Tab), y lo que solo se alcanzaba con un gesto

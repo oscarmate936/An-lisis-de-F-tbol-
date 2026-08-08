@@ -11,6 +11,7 @@ function Fixtures({ api, onOpen, onTeam, leagues }) {
   const [vistaLista, setVistaLista] = useState("ligas");
   const [favs, setFavs] = useState(() => new Set());
   const [buscando, setBuscando] = useState(false);
+  const [recientes, setRecientes] = useState(() => recientesLeer());
 
   /* La combinada ya sabía de la cartelera; faltaba que la cartelera
      supiera de la combinada. */
@@ -216,14 +217,35 @@ function Fixtures({ api, onOpen, onTeam, leagues }) {
               onChange={(e) => setQ(e.target.value)}
               onFocus={() => setBuscando(true)}
               onBlur={() => setTimeout(() => setBuscando(false), 150)}
-              onKeyDown={(e) => { if (e.key === "Escape") { setBuscando(false); e.currentTarget.blur(); } }}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") { setBuscando(false); e.currentTarget.blur(); return; }
+                if (e.key === "Enter" && q.trim()) {
+                  setRecientes(recientesGuardar(q.trim()));
+                  setBuscando(false);
+                  e.currentTarget.blur();
+                }
+              }}
               role="combobox" aria-expanded={buscando && sugerencias.length > 0} aria-autocomplete="list"
             />
+            {buscando && q.trim().length === 0 && recientes.length > 0 && (
+              <div className="fx-sug" role="listbox">
+                <div className="fx-sug-titulo">Búsquedas recientes</div>
+                {recientes.map((r) => (
+                  <button key={r} className="fx-sug-item" role="option"
+                    onClick={() => { toque(); setQ(r); setRecientes(recientesGuardar(r)); setBuscando(false); }}>
+                    <span className="fx-sug-tag">Reciente</span>
+                    <span className="fx-sug-nombre">{r}</span>
+                  </button>
+                ))}
+              </div>
+            )}
             {buscando && sugerencias.length > 0 && (
               <div className="fx-sug" role="listbox">
                 {sugerencias.map((s, i) => (
                   <button key={s.tipo + s.nombre} className="fx-sug-item" role="option"
-                    onClick={() => { toque(); setQ(s.nombre); setBuscando(false); }}>
+                    onClick={() => {
+                      toque(); setQ(s.nombre); setRecientes(recientesGuardar(s.nombre)); setBuscando(false);
+                    }}>
                     <span className={"fx-sug-tag" + (s.tipo === "equipo" ? " fx-sug-tag-eq" : " fx-sug-tag-lg")}>
                       {s.tipo === "equipo" ? "Equipo" : "Liga"}
                     </span>
