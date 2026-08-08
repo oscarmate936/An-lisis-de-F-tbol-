@@ -73,38 +73,57 @@ function Connect({ onConnect, busy, error, initialKey }) {
    ============================================================ */
 /** Una fila de la cartelera. Sale del cuerpo de la lista para poder
     pintarla también en la vista por horas, sin duplicar el marcado. */
-const FxRow = React.memo(function FxRow({ f, n, onOpen, liga }) {
+const FxRow = React.memo(function FxRow({ f, n, onOpen, onTeam, fav, onFijar, liga }) {
   const st = f.fixture.status.short;
   const enJuego = LIVE_STATES.includes(st);
   const jugado = DONE_STATES.includes(st);
   const raro = ["PST", "CANC", "SUSP", "ABD", "AWD", "WO"].includes(st);
+  const [menu, setMenu] = useState(false);
+  /* Mantener pulsado el partido abre un atajo a lo que normalmente
+     costaría dos toques: ver un equipo, o fijar su liga, sin tener
+     que entrar primero al partido. */
+  const press = useLongPress(() => setMenu(true));
   return (
-    <button className={"fx" + (n ? " fx-marcada" : "")} onClick={() => onOpen(f)}>
-      <span className={"fx-estado" + (enJuego ? " fx-estado-vivo" : raro ? " fx-estado-raro" : "")}>
-        {enJuego ? (
-          <><span className="dot" />{f.fixture.status.elapsed ?? ""}′</>
-        ) : jugado ? "Final" : raro ? st : clock(f.fixture.date)}
-      </span>
-      <span className="fx-teams">
-        {liga && <span className="fx-liga">{f.league.name}</span>}
-        <span className={"fx-team" + (f.teams.home.winner ? " fx-win" : "")}>
-          <Crest src={f.teams.home.logo} alt="" size={20} />
-          <span className="fx-name">{f.teams.home.name}</span>
+    <>
+      <button className={"fx" + (n ? " fx-marcada" : "")} onContextMenu={(e) => e.preventDefault()}
+        onPointerDown={press.onPointerDown} onPointerMove={press.onPointerMove}
+        onPointerUp={press.onPointerUp} onPointerCancel={press.onPointerCancel}
+        onClick={(e) => press.onClick(e, () => onOpen(f))}>
+        <span className={"fx-estado" + (enJuego ? " fx-estado-vivo" : raro ? " fx-estado-raro" : "")}>
+          {enJuego ? (
+            <><span className="dot" />{f.fixture.status.elapsed ?? ""}′</>
+          ) : jugado ? "Final" : raro ? st : clock(f.fixture.date)}
         </span>
-        <span className={"fx-team" + (f.teams.away.winner ? " fx-win" : "")}>
-          <Crest src={f.teams.away.logo} alt="" size={20} />
-          <span className="fx-name">{f.teams.away.name}</span>
+        <span className="fx-teams">
+          {liga && <span className="fx-liga">{f.league.name}</span>}
+          <span className={"fx-team" + (f.teams.home.winner ? " fx-win" : "")}>
+            <Crest src={f.teams.home.logo} alt="" size={20} />
+            <span className="fx-name">{f.teams.home.name}</span>
+          </span>
+          <span className={"fx-team" + (f.teams.away.winner ? " fx-win" : "")}>
+            <Crest src={f.teams.away.logo} alt="" size={20} />
+            <span className="fx-name">{f.teams.away.name}</span>
+          </span>
         </span>
-      </span>
-      <span className="fx-score mono">
-        <b>{f.goals.home ?? "–"}</b>
-        <b>{f.goals.away ?? "–"}</b>
-      </span>
-      <span className="fx-marcado">
-        {n > 0 && <i className="mono fx-chip" title="selecciones tuyas en este partido">{n}</i>}
-      </span>
-      <span className="fx-go">›</span>
-    </button>
+        <span className="fx-score mono">
+          <b>{f.goals.home ?? "–"}</b>
+          <b>{f.goals.away ?? "–"}</b>
+        </span>
+        <span className="fx-marcado">
+          {n > 0 && <i className="mono fx-chip" title="selecciones tuyas en este partido">{n}</i>}
+        </span>
+        <span className="fx-go">›</span>
+      </button>
+      <OverflowMenu trigger={false} open={menu} onOpenChange={setMenu}
+        label={`Más opciones — ${f.teams.home.name} contra ${f.teams.away.name}`}
+        items={[
+          { label: "Abrir partido", onClick: () => onOpen(f) },
+          onTeam && { label: `Ver ${f.teams.home.name}`, onClick: () => onTeam(f.teams.home, f.league) },
+          onTeam && { label: `Ver ${f.teams.away.name}`, onClick: () => onTeam(f.teams.away, f.league) },
+          onFijar && { label: fav ? `Quitar ${f.league.name} de fijadas` : `Fijar ${f.league.name} arriba`, onClick: onFijar },
+        ].filter(Boolean)}
+      />
+    </>
   );
 });
 

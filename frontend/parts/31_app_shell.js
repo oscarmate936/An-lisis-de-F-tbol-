@@ -232,13 +232,13 @@ function AjIco({ name }) {
 function Switch({ on, onChange, label }) {
   return (
     <button type="button" role="switch" aria-checked={on} aria-label={label}
-      className={"switch" + (on ? " switch-on" : "")} onClick={() => onChange(!on)} />
+      className={"switch" + (on ? " switch-on" : "")} onClick={() => { toque(6); onChange(!on); }} />
   );
 }
 
 /** Ajustes: aspecto, copia de seguridad y cuenta. En el móvil es
     además el único sitio desde donde se puede salir. */
-function Ajustes({ onClose, account, meta, tema, setTema, aspecto, setAspecto, onSalir }) {
+function Ajustes({ onClose, account, meta, tema, temaAplicado, setTema, aspecto, setAspecto, onSalir }) {
   const [completo, setCompleto] = useState(CALCULO_COMPLETO);
   const [msg, setMsg] = useState(null);
   const [err, setErr] = useState(null);
@@ -284,14 +284,25 @@ function Ajustes({ onClose, account, meta, tema, setTema, aspecto, setAspecto, o
           <div className="list-row">
             <span className="list-row-icon"><AjIco name="tema" /></span>
             <span className="list-row-text">
-              <span className="list-row-title">Tema oscuro</span>
-              <span className="list-row-sub">{tema === "oscuro" ? "Activado" : "Desactivado"}</span>
+              <span className="list-row-title">Tema</span>
             </span>
             <span className="list-row-end">
-              <Switch on={tema === "oscuro"} label="Tema oscuro"
-                onChange={(v) => setTema(v ? "oscuro" : "claro")} />
+              <div className="seg">
+                <button className={"segbtn" + (tema === "claro" ? " segbtn-on" : "")}
+                  onClick={() => setTema("claro")}>Claro</button>
+                <button className={"segbtn" + (tema === "oscuro" ? " segbtn-on" : "")}
+                  onClick={() => setTema("oscuro")}>Oscuro</button>
+                <button className={"segbtn" + (tema === "auto" ? " segbtn-on" : "")}
+                  onClick={() => setTema("auto")}>Auto</button>
+              </div>
             </span>
           </div>
+          {tema === "auto" && (
+            <p className="foot" style={{ marginTop: 0 }}>
+              Ahora mismo se ve en {temaAplicado === "oscuro" ? "oscuro" : "claro"}, según lo que
+              tenga configurado este aparato.
+            </p>
+          )}
           <div className="list-row">
             <span className="list-row-icon"><AjIco name="densidad" /></span>
             <span className="list-row-text">
@@ -406,10 +417,25 @@ function Deshacer() {
 }
 
 function App() {
+  /* "auto" sigue al sistema operativo; oscuro/claro son elecciones
+     explícitas que lo pisan. Lo que de verdad pinta la pantalla es
+     `temaAplicado`, no `tema` — la diferencia solo importa para saber
+     qué marcar en Ajustes. */
   const [tema, setTema] = useState(() => {
-    try { return localStorage.getItem("tema") || "oscuro"; } catch (e) { return "oscuro"; }
+    try { return localStorage.getItem("tema") || "auto"; } catch (e) { return "auto"; }
   });
-  useEffect(() => { document.documentElement.dataset.tema = tema; }, [tema]);
+  const [prefiereOscuro, setPrefiereOscuro] = useState(() => {
+    try { return window.matchMedia("(prefers-color-scheme: dark)").matches; } catch (e) { return true; }
+  });
+  useEffect(() => {
+    let mq;
+    try { mq = window.matchMedia("(prefers-color-scheme: dark)"); } catch (e) { return; }
+    const onChange = (e) => setPrefiereOscuro(e.matches);
+    mq.addEventListener ? mq.addEventListener("change", onChange) : mq.addListener(onChange);
+    return () => (mq.removeEventListener ? mq.removeEventListener("change", onChange) : mq.removeListener(onChange));
+  }, []);
+  const temaAplicado = tema === "auto" ? (prefiereOscuro ? "oscuro" : "claro") : tema;
+  useEffect(() => { document.documentElement.dataset.tema = temaAplicado; }, [temaAplicado]);
   const [apiKey, setApiKey] = useState("");
   const [account, setAccount] = useState(null);
   const [gateErr, setGateErr] = useState(null);
@@ -469,14 +495,15 @@ function App() {
     return slipOn(cuenta);
   }, []);
 
-  const cambiarTema = useCallback(() => {
-    setTema((t) => {
-      const nuevo = t === "claro" ? "oscuro" : "claro";
-      document.documentElement.dataset.tema = nuevo;
-      try { localStorage.setItem("tema", nuevo); } catch (e) { /* sin espacio */ }
-      return nuevo;
-    });
+  const elegirTema = useCallback((v) => {
+    setTema(v);
+    try { localStorage.setItem("tema", v); } catch (e) { /* sin espacio */ }
   }, []);
+  /* El atajo rápido (tecla T, o el icono del cajón) siempre deja un
+     tema explícito — nunca vuelve a "auto" por sí solo. */
+  const cambiarTema = useCallback(() => {
+    elegirTema(temaAplicado === "claro" ? "oscuro" : "claro");
+  }, [elegirTema, temaAplicado]);
 
   const onMeta = useCallback((m) => {
     setMeta((x) => ({
@@ -738,7 +765,7 @@ function App() {
           <ErrorBoundary key={view + (fixture ? ":" + fixture.fixture.id : "")}
             onBack={() => { irA("fixtures"); setFixture(null); }}>
           {view === "fixtures" && (
-            <Fixtures api={api} leagues={leagues} onOpen={openFixture} />
+            <Fixtures api={api} leagues={leagues} onOpen={openFixture} onTeam={openTeam} />
           )}
           {view === "match" && fixture && (
             <Match api={api} fixture={fixture} onBack={() => irA("fixtures")} onTeam={openTeam}
@@ -770,7 +797,7 @@ function App() {
           <Ajustes
             onClose={() => setAjustes(false)}
             account={account} meta={meta}
-            tema={tema} setTema={(t) => { if (t !== tema) cambiarTema(); }}
+            tema={tema} temaAplicado={temaAplicado} setTema={elegirTema}
             aspecto={aspecto} setAspecto={setAspecto}
             onSalir={() => { setAjustes(false); disconnect(); }}
           />
@@ -778,7 +805,7 @@ function App() {
         {drawer && (
           <Drawer
             onClose={() => setDrawer(false)}
-            account={account} tema={tema} cambiarTema={cambiarTema}
+            account={account} tema={temaAplicado} cambiarTema={cambiarTema}
             onAyuda={() => setAyuda(true)}
             onAjustes={() => setAjustes(true)}
             onLigas={() => irA("league")}
@@ -798,7 +825,7 @@ function App() {
           ))}
           <button className={"fab-dock" + (view === FAB_SECCION[0] ? " fab-dock-on" : "")}
             title={`${FAB_SECCION[1]} · tecla 4`} aria-label={FAB_SECCION[1]}
-            onClick={() => irA(FAB_SECCION[0])}>
+            onClick={() => { toque(12); irA(FAB_SECCION[0]); }}>
             <Ico name={FAB_SECCION[0]} />
             {slipN > 0 && <i className="mono fabbadge">{slipN}</i>}
           </button>

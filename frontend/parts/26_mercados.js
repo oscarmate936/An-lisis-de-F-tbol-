@@ -1592,8 +1592,7 @@ function Mercados({ api, fixture, onBoleto }) {
                 ))}
               </div>
               {h2h && (
-                <>
-                  <Rule label="Historial directo" />
+                <Collapsible title="Historial directo" defaultOpen>
                   <p className="foot" style={{ marginTop: 0 }}>
                     En los últimos <span className="mono">{h2h.n}</span> enfrentamientos:{" "}
                     <span className="mono">{fx(h2h.total)}</span> goles por partido,{" "}
@@ -1602,7 +1601,7 @@ function Mercados({ api, fixture, onBoleto }) {
                     modelo ya usa este historial como una variable más del ensamble, encogida:
                     cuatro partidos entre plantillas que han cambiado no son una ley.
                   </p>
-                </>
+                </Collapsible>
               )}
               {!counts && (
                 <p className="foot">
@@ -1779,7 +1778,7 @@ function Mercados({ api, fixture, onBoleto }) {
               </div>
             </div>
 
-            <Rule label="Qué pasa si me equivoco" />
+            <Collapsible title="Qué pasa si me equivoco">
             {(() => {
               const f = 1 + sensV / 100;
               const rho = base.params?.rho ?? -0.13;
@@ -1840,8 +1839,9 @@ function Mercados({ api, fixture, onBoleto }) {
               Si un mercado se mueve poco entre escenarios, el pronóstico aguanta aunque las
               fuerzas estén algo mal. Si se mueve mucho, no te fíes del decimal.
             </p>
+            </Collapsible>
 
-            <Rule label="Matriz de marcadores" />
+            <Collapsible title="Matriz de marcadores" defaultOpen>
             <div className="matrixwrap">
               <div>
                 <div className="mataxis mataxis-top">{away.name}</div>
@@ -1893,6 +1893,7 @@ function Mercados({ api, fixture, onBoleto }) {
                 ))}
               </div>
             </div>
+            </Collapsible>
           </>
         )}
 
@@ -2010,7 +2011,7 @@ function Mercados({ api, fixture, onBoleto }) {
               <span className="lg-h">{home.name}</span>
               <span className="lg-a">{away.name}</span>
             </div>
-            <Rule label="Hándicap europeo (tres vías)" />
+            <Collapsible title="Hándicap europeo (tres vías)">
             <div className="two">
               {["Europeo -1", "Europeo -2", "Europeo +1", "Europeo +2"].map((mk) => {
                 const items = mkFam("Hándicap").filter((x) => x.mercado === mk);
@@ -2025,6 +2026,7 @@ function Mercados({ api, fixture, onBoleto }) {
                 );
               })}
             </div>
+            </Collapsible>
           </>
         )}
 

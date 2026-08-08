@@ -23,6 +23,31 @@ La interfaz sigue el lenguaje visual y de interacción de Material 3
 - Tipografía Roboto, botones de píldora, y un encuadre de teléfono
   centrado en pantallas anchas en vez de estirarse a todo el ancho.
 
+Y de comportamiento, no solo de estilo:
+
+- **Tema automático**: además de Claro/Oscuro, "Auto" sigue el tema
+  del sistema operativo y se actualiza solo si el aparato cambia de
+  tema mientras la app está abierta.
+- **Deslizar para actuar**: las combinadas archivadas del historial
+  se pueden quitar deslizándolas, sin pasar por ningún menú.
+- **Pulsación larga**: mantener pulsado un partido en la cartelera
+  abre un atajo a ver cualquiera de los dos equipos o fijar su liga,
+  sin entrar primero al partido.
+- **Tirar para refrescar**: en la cartelera, el gesto de Android de
+  siempre, además del botón "Actualizar" que ya había.
+- **Secciones plegables** en Mercados para el contenido más opcional
+  (qué pasa si me equivoco, hándicap europeo...), dejando arriba lo
+  que casi todo el mundo mira.
+- **Vibración breve** en la acción central (FAB), los interruptores y
+  las acciones del menú de tres puntos, donde el navegador lo permite.
+- **Icono y nombre propios** al guardar la app como acceso directo o
+  marcador (`manifest.json` + iconos). *Nota honesta*: no llega a ser
+  una PWA instalable de verdad — se probó registrar un service worker
+  y Chrome lo rechaza, porque el único sitio donde Streamlit deja
+  servir archivos estáticos (`app/static/`) no alcanza a cubrir la
+  página real de la app. Sin ese service worker no hay ventana propia
+  sin barra de navegador, solo un acceso directo con buen icono.
+
 ## Cómo está organizado
 
 La aplicación en sí es una **SPA de React** que corre entera en el

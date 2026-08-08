@@ -1648,6 +1648,33 @@ html[data-densidad="comoda"] .betval,html[data-densidad="comoda"] .ldside{paddin
   width:100%;padding:12px 4px;font-size:13.5px;color:var(--chalk);border-radius:var(--r)}
 .ofitem:hover{background:var(--turf2)}
 .ofitem-mal{color:var(--red)}
+
+/* ---------- deslizar para actuar (swipe) ---------- */
+.swipe-wrap{position:relative;overflow:hidden;border-radius:var(--r)}
+.swipe-front{position:relative;background:var(--surface);touch-action:pan-y;will-change:transform}
+.swipe-action{all:unset;box-sizing:border-box;cursor:pointer;position:absolute;top:0;right:0;bottom:0;
+  width:92px;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:700;
+  letter-spacing:.02em;color:#fff;background:var(--mark)}
+.swipe-action-mal{background:var(--red);color:#3C0000}
+
+/* ---------- secciones plegables (accordion) ---------- */
+.acc{border:1px solid var(--line-soft);border-radius:var(--r);overflow:hidden;margin-top:var(--gap)}
+.acc-head{all:unset;cursor:pointer;box-sizing:border-box;width:100%;display:flex;align-items:center;
+  gap:10px;padding:13px 14px;background:var(--turf);color:var(--chalk);font-size:13px;font-weight:600}
+.acc-head-sub{font-weight:400;color:var(--faint);font-size:11.5px;margin-left:2px}
+.acc-chev{margin-left:auto;transition:transform .18s;color:var(--faint);flex:0 0 auto}
+.acc-head:hover .acc-chev{color:var(--chalk)}
+.acc-on .acc-chev{transform:rotate(180deg)}
+.acc-body{padding:16px 14px}
+
+/* ---------- tirar para refrescar (pull to refresh) ---------- */
+.ptr{display:flex;align-items:center;justify-content:center;height:0;overflow:hidden;color:var(--mark);
+  transition:height .15s}
+.ptr-on{height:52px}
+.ptr-ico{width:20px;height:20px;transition:transform .1s}
+.ptr-listo .ptr-ico{transform:rotate(180deg)}
+.ptr-cargando .ptr-ico{animation:gira 0.7s linear infinite}
+@keyframes gira{to{transform:rotate(360deg)}}
 `}</style>
   );
 }

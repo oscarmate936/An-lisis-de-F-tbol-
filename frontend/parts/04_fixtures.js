@@ -1,4 +1,4 @@
-function Fixtures({ api, onOpen, leagues }) {
+function Fixtures({ api, onOpen, onTeam, leagues }) {
   const [date, setDate] = useState(isoDay(new Date()));
   const [live, setLive] = useState(false);
   const [q, setQ] = useState("");
@@ -170,6 +170,7 @@ function Fixtures({ api, onOpen, leagues }) {
     });
 
   return (
+    <PullToRefresh onRefresh={async () => { cacheOlvidar((k) => k.startsWith("fixtures?")); await load(); }}>
     <div className="page">
       <div className="page-head">
         <div>
@@ -295,7 +296,8 @@ function Fixtures({ api, onOpen, leagues }) {
           </div>
           <div className="fx-list">
             {porHora.map((f) => (
-              <FxRow key={f.fixture.id} f={f} n={marcados.get(f.fixture.id)} onOpen={onOpen} liga />
+              <FxRow key={f.fixture.id} f={f} n={marcados.get(f.fixture.id)} onOpen={onOpen} onTeam={onTeam}
+                fav={favs.has(f.league.id)} onFijar={() => fijar(f.league.id)} liga />
             ))}
           </div>
         </section>
@@ -327,7 +329,8 @@ function Fixtures({ api, onOpen, leagues }) {
             {abierta && (
               <div className="fx-list">
                 {g.items.map((f) => (
-                  <FxRow key={f.fixture.id} f={f} n={marcados.get(f.fixture.id)} onOpen={onOpen} />
+                  <FxRow key={f.fixture.id} f={f} n={marcados.get(f.fixture.id)} onOpen={onOpen} onTeam={onTeam}
+                    fav={favs.has(g.league.id)} onFijar={() => fijar(g.league.id)} />
                 ))}
               </div>
             )}
@@ -335,6 +338,7 @@ function Fixtures({ api, onOpen, leagues }) {
         );
       })}
     </div>
+    </PullToRefresh>
   );
 }
 

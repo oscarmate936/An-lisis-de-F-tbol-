@@ -225,47 +225,40 @@ function Historial() {
           }}>Vaciar historial</button>
         </div>
         <div className="card-body card-flush">
-          <div className="tablewrap">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th className="tl">Combinada</th><th>Archivada</th><th>Probabilidad</th>
-                  <th>Aciertos</th><th>Salió</th><th />
-                </tr>
-              </thead>
-              <tbody>
-                {hist.map((h) => {
-                  const res = (h.picks || []).filter((p) => p.res === "ok" || p.res === "no");
-                  return (
-                    <tr key={h.id}>
-                      <td className="tl">{h.nombre}</td>
-                      <td className="mono dim">
-                        {new Date(h.fecha).toLocaleDateString("es", { day: "numeric", month: "short" })}
-                      </td>
-                      <td className="mono">{fin(h.p) ? pc(h.p) : "—"}</td>
-                      <td className="mono">{res.filter((p) => p.res === "ok").length}/{h.n}</td>
-                      <td className={h.resultado === "ok" ? "rate-hi" : h.resultado === "no" ? "rate-lo" : "dim"}>
-                        {h.resultado === "ok" ? "sí" : h.resultado === "no" ? "no" : "parcial"}
-                      </td>
-                      <td>
-                        <OverflowMenu label={`Más opciones para ${h.nombre}`} items={[
-                          { label: "Ver detalle", onClick: () => setDetalle(h) },
-                          {
-                            label: "Quitar del historial", danger: true, onClick: async () => {
-                              const previo = await histRead();
-                              await histWrite(previo.filter((x) => x.id !== h.id));
-                              undoOfrecer([], `Borrada “${h.nombre}” del historial`,
-                                async () => { await histWrite(previo); });
-                            },
-                          },
-                        ]} />
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <p className="foot" style={{ margin: "0 0 4px", padding: "0 16px" }}>
+            Desliza una combinada hacia la izquierda para quitarla, o usa el menú de tres puntos.
+          </p>
+          {hist.map((h) => {
+            const res = (h.picks || []).filter((p) => p.res === "ok" || p.res === "no");
+            const quitar = async () => {
+              const previo = await histRead();
+              await histWrite(previo.filter((x) => x.id !== h.id));
+              undoOfrecer([], `Borrada “${h.nombre}” del historial`,
+                async () => { await histWrite(previo); });
+            };
+            return (
+              <Swipeable key={h.id} actionLabel="Quitar" onAction={quitar}>
+                <div className="list-row" style={{ padding: "11px 16px" }}>
+                  <span className={"list-row-icon" + (h.resultado === "ok" ? " list-row-icon-ok" : h.resultado === "no" ? " list-row-icon-mal" : "")}>
+                    {h.resultado === "ok" ? "✓" : h.resultado === "no" ? "✕" : "…"}
+                  </span>
+                  <span className="list-row-text">
+                    <span className="list-row-title">{h.nombre}</span>
+                    <span className="list-row-sub">
+                      {new Date(h.fecha).toLocaleDateString("es", { day: "numeric", month: "short" })} ·{" "}
+                      {fin(h.p) ? pc(h.p) : "—"} · {res.filter((p) => p.res === "ok").length}/{h.n} aciertos
+                    </span>
+                  </span>
+                  <span className="list-row-end">
+                    <OverflowMenu label={`Más opciones para ${h.nombre}`} items={[
+                      { label: "Ver detalle", onClick: () => setDetalle(h) },
+                      { label: "Quitar del historial", danger: true, onClick: quitar },
+                    ]} />
+                  </span>
+                </div>
+              </Swipeable>
+            );
+          })}
         </div>
       </section>
 

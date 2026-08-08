@@ -41,4 +41,30 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+# El manifest y los iconos se enganchan en la propia página de
+# Streamlit (servida como estática gracias a enableStaticServing en
+# .streamlit/config.toml), no en el iframe donde vive la SPA: es esta
+# página, con la app dentro, la que se "añade a la pantalla de
+# inicio" o se guarda como marcador.
+#
+# Queda fuera, a propósito, un service worker: se probó de verdad
+# (no solo se asumió) y Chrome lo rechaza con SecurityError en cuanto
+# se le pide un scope que cubra "/" — el máximo que deja un script
+# servido en app/static/ es app/static/, que no llega a cubrir la
+# página real. Sin service worker con ese alcance no hay instalación
+# completa (ventana propia, sin barra del navegador): lo que sí
+# consigue esto es que el icono y el nombre salgan bien al guardarla
+# como acceso directo o marcador.
+st.markdown(
+    """
+    <link rel="manifest" href="app/static/manifest.json">
+    <link rel="icon" href="app/static/icon-192.png">
+    <link rel="apple-touch-icon" href="app/static/icon-192.png">
+    <meta name="theme-color" content="#0F1116">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Pizarra">
+    """,
+    unsafe_allow_html=True,
+)
+
 components.html(build_html(), height=960, scrolling=True)

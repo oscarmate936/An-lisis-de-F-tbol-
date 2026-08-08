@@ -1,3 +1,63 @@
+/* Un toque háptico brevísimo para las acciones que de verdad cambian
+   algo (confirmar, borrar, la acción central). No todos los
+   navegadores lo dejan —sobre todo fuera de Android— así que falla
+   en silencio donde no exista. */
+function toque(ms = 10) {
+  try { navigator.vibrate && navigator.vibrate(ms); } catch (e) { /* sin soporte */ }
+}
+
+/** Mantener pulsado abre un menú rápido, sin quitarle el toque normal
+    a lo que ya hacía el elemento. Se apoya en el `onClick` nativo del
+    propio elemento (que ya entiende ratón, dedo Y teclado) y solo
+    añade el temporizador por encima; si la pulsación larga ya
+    disparó, el click que llega justo después se descarta. Se cancela
+    solo si el dedo se mueve más de unos píxeles, para no confundir
+    un scroll con una pulsación larga. */
+function useLongPress(onLongPress, ms = 480) {
+  const timer = useRef(null);
+  const disparado = useRef(false);
+  const inicio = useRef(null);
+
+  const limpiar = () => { if (timer.current) clearTimeout(timer.current); timer.current = null; };
+
+  const onPointerDown = (e) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    inicio.current = { x: e.clientX, y: e.clientY };
+    /* Sin esto, en cuanto la pulsación larga abre algo por encima de
+       el dedo, el navegador puede dejar de mandarle a este mismo
+       elemento el pointerup y el click que vienen después. */
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    limpiar();
+    timer.current = setTimeout(() => {
+      disparado.current = true;
+      toque(15);
+      onLongPress(e);
+    }, ms);
+  };
+  const onPointerMove = (e) => {
+    if (!inicio.current) return;
+    const dx = e.clientX - inicio.current.x, dy = e.clientY - inicio.current.y;
+    if (Math.hypot(dx, dy) > 10) limpiar();
+  };
+  const onPointerUp = () => {
+    limpiar();
+    /* Si lo que abrió la pulsación larga tapa el elemento antes de
+       levantar el dedo, el click nativo puede no llegar a disparar
+       aquí, y el `onClick` de abajo —que es quien limpia
+       `disparado`— nunca se ejecutaría. Se limpia también aquí, con
+       un pelín de margen para que, si el click SÍ llega, le dé
+       tiempo a leerlo primero y descartarlo como corresponde. */
+    if (disparado.current) setTimeout(() => { disparado.current = false; }, 0);
+  };
+  const onPointerCancel = () => limpiar();
+  const onClick = (e, real) => {
+    if (disparado.current) { disparado.current = false; e.preventDefault(); e.stopPropagation(); return; }
+    real && real(e);
+  };
+
+  return { onPointerDown, onPointerMove, onPointerUp, onPointerCancel, onClick };
+}
+
 const TZ = (() => {
   try { return Intl.DateTimeFormat().resolvedOptions().timeZone || null; }
   catch (e) { return null; }
@@ -43,18 +103,54 @@ function Empty({ title, hint }) {
   );
 }
 
-/** El menú de tres puntos: agrupa acciones secundarias por fila para
-    no llenar la lista de botones sueltos. Se abre como una hoja
-    inferior, igual que el resto de menús de la app. */
-function OverflowMenu({ label = "Más opciones", items }) {
-  const [abierto, setAbierto] = useState(false);
+/** Una sección que se pliega: en pantallas con mucho contenido
+    opcional —el "qué pasa si me equivoco" de Mercados, por ejemplo—
+    deja a la vista lo que casi todos quieren y esconde el resto de
+    un toque, en vez de obligar a pasar de largo con el dedo. */
+function Collapsible({ title, defaultOpen = false, children }) {
+  const [abierto, setAbierto] = useState(defaultOpen);
   return (
-    <>
-      <button className="overflow-btn" aria-label={label} onClick={() => setAbierto(true)}>
-        <svg viewBox="0 0 18 18" width="16" height="16" fill="currentColor" aria-hidden="true">
-          <circle cx="9" cy="3.6" r="1.5" /><circle cx="9" cy="9" r="1.5" /><circle cx="9" cy="14.4" r="1.5" />
+    <div className={"acc" + (abierto ? " acc-on" : "")}>
+      <button className="acc-head" aria-expanded={abierto} onClick={() => setAbierto((v) => !v)}>
+        <span>{title}</span>
+        <svg className="acc-chev" viewBox="0 0 18 18" width="14" height="14" fill="none"
+          stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M5 7l4 4 4-4" />
         </svg>
       </button>
+      {abierto && <div className="acc-body">{children}</div>}
+    </div>
+  );
+}
+
+/** El menú de tres puntos: agrupa acciones secundarias por fila para
+    no llenar la lista de botones sueltos. Se abre como una hoja
+    inferior, igual que el resto de menús de la app. Con `trigger`
+    a false no dibuja el botón de los tres puntos y deja que otra
+    cosa —una pulsación larga, por ejemplo— controle si está abierto
+    a través de `open`/`onOpenChange`. */
+function OverflowMenu({ label = "Más opciones", items, trigger = true, open, onOpenChange }) {
+  const [abiertoLocal, setAbiertoLocal] = useState(false);
+  const abierto = open !== undefined ? open : abiertoLocal;
+  const setAbierto = onOpenChange || setAbiertoLocal;
+  /* Las demás hojas de la app se cierran con Escape porque cuelgan
+     del atajo global de App(); esta vive suelta en cualquier fila,
+     así que se las apaña sola para no ser la única que no obedece. */
+  useEffect(() => {
+    if (!abierto) return;
+    const onKey = (e) => { if (e.key === "Escape") setAbierto(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [abierto]);
+  return (
+    <>
+      {trigger && (
+        <button className="overflow-btn" aria-label={label} onClick={() => setAbierto(true)}>
+          <svg viewBox="0 0 18 18" width="16" height="16" fill="currentColor" aria-hidden="true">
+            <circle cx="9" cy="3.6" r="1.5" /><circle cx="9" cy="9" r="1.5" /><circle cx="9" cy="14.4" r="1.5" />
+          </svg>
+        </button>
+      )}
       {abierto && ReactDOM.createPortal(
         /* La fila que lo abre puede vivir dentro de una tabla con
            content-visibility (para no pintar lo que no se ve), y eso
@@ -67,7 +163,7 @@ function OverflowMenu({ label = "Más opciones", items }) {
             <div className="card-body modal-scroll">
               {items.map((it, i) => (
                 <button key={i} role="menuitem" className={"ofitem" + (it.danger ? " ofitem-mal" : "")}
-                  onClick={() => { setAbierto(false); it.onClick(); }}>
+                  onClick={() => { toque(it.danger ? 18 : 8); setAbierto(false); it.onClick(); }}>
                   {it.label}
                 </button>
               ))}
@@ -77,6 +173,105 @@ function OverflowMenu({ label = "Más opciones", items }) {
         document.body
       )}
     </>
+  );
+}
+
+/** Deslizar para actuar: un atajo de gesto sobre lo que ya se puede
+    hacer desde el menú de tres puntos, no una alternativa que haga
+    falta usar. Se agarra con el puntero, no con listeners de touch a
+    pelo, para que ratón y dedo se comporten igual. */
+function Swipeable({ children, actionLabel, onAction, danger = true }) {
+  const [dx, setDx] = useState(0);
+  const arrastre = useRef(null);
+  const MAX = 92;
+
+  const onDown = (e) => {
+    arrastre.current = { x: e.clientX, dx0: dx };
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+  };
+  const onMove = (e) => {
+    if (!arrastre.current) return;
+    const delta = e.clientX - arrastre.current.x;
+    setDx(Math.max(-MAX - 28, Math.min(0, arrastre.current.dx0 + delta)));
+  };
+  const soltar = () => {
+    if (!arrastre.current) return;
+    arrastre.current = null;
+    setDx((v) => (v < -MAX * 0.55 ? -MAX : 0));
+  };
+
+  return (
+    <div className="swipe-wrap">
+      <button className={"swipe-action" + (danger ? " swipe-action-mal" : "")}
+        style={{ opacity: Math.min(1, -dx / MAX) }}
+        onClick={() => { toque(18); setDx(0); onAction(); }}>
+        {actionLabel}
+      </button>
+      <div className="swipe-front" style={{
+        transform: `translateX(${dx}px)`,
+        transition: arrastre.current ? "none" : "transform .2s cubic-bezier(.2,.8,.2,1)",
+      }}
+        onPointerDown={onDown} onPointerMove={onMove}
+        onPointerUp={soltar} onPointerCancel={soltar}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/** Tirar hacia abajo para refrescar, el gesto de Android para "esto
+    puede estar desactualizado, pídelo otra vez" sin ir a buscar un
+    botón. Solo se activa si ya se está arriba del todo: si hay algo
+    que desplazar, tirar hacia abajo es simplemente hacer scroll. */
+function PullToRefresh({ onRefresh, children }) {
+  const [dy, setDy] = useState(0);
+  const [estado, setEstado] = useState("reposo");
+  const arranque = useRef(null);
+  const UMBRAL = 64;
+
+  const onPointerDown = (e) => {
+    if (e.pointerType === "mouse") return;
+    if ((document.scrollingElement?.scrollTop || 0) > 2 || estado === "cargando") return;
+    arranque.current = { y: e.clientY };
+  };
+  const onPointerMove = (e) => {
+    if (!arranque.current) return;
+    const delta = e.clientY - arranque.current.y;
+    if (delta <= 0) { setDy(0); setEstado("reposo"); return; }
+    const avance = delta * 0.5;
+    setDy(Math.min(UMBRAL * 1.3, avance));
+    setEstado(avance >= UMBRAL ? "listo" : "reposo");
+  };
+  const soltar = async () => {
+    if (!arranque.current) return;
+    const listo = estado === "listo";
+    arranque.current = null;
+    if (listo) {
+      setEstado("cargando");
+      toque(10);
+      try { await onRefresh(); } finally { setEstado("reposo"); setDy(0); }
+    } else {
+      setEstado("reposo"); setDy(0);
+    }
+  };
+
+  const activo = estado === "cargando" || dy > 4;
+  return (
+    <div onPointerDown={onPointerDown} onPointerMove={onPointerMove}
+      onPointerUp={soltar} onPointerCancel={soltar}>
+      <div
+        className={"ptr" + (activo ? " ptr-on" : "") + (estado === "listo" ? " ptr-listo" : "")
+          + (estado === "cargando" ? " ptr-cargando" : "")}
+        style={{ height: estado === "cargando" ? 52 : Math.min(52, dy) }}
+        aria-hidden="true"
+      >
+        <svg className="ptr-ico" viewBox="0 0 18 18" fill="none" stroke="currentColor"
+          strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M9 2.5v9M9 11.5 5.8 8.3M9 11.5l3.2-3.2" />
+        </svg>
+      </div>
+      {children}
+    </div>
   );
 }
 

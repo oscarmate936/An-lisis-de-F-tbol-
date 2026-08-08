@@ -107,12 +107,12 @@ function Match({ api, fixture, onTeam, onBack, onBoleto }) {
               <span>{fx.status.short === "NS" ? "–" : fixture.goals.away ?? "–"}</span>
             </div>
             <div className={"sb-state" + (isLive ? " sb-state-live" : "")}>{fx.status.long}</div>
-            {fixture.score?.halftime?.home !== null && (
+            {fixture.score?.halftime?.home != null && (
               <div className="sb-breaks mono">
                 DES {fixture.score.halftime.home}–{fixture.score.halftime.away}
-                {fixture.score.extratime?.home !== null &&
+                {fixture.score.extratime?.home != null &&
                   ` · PRÓR ${fixture.score.extratime.home}–${fixture.score.extratime.away}`}
-                {fixture.score.penalty?.home !== null &&
+                {fixture.score.penalty?.home != null &&
                   ` · PEN ${fixture.score.penalty.home}–${fixture.score.penalty.away}`}
               </div>
             )}
