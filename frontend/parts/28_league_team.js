@@ -45,34 +45,30 @@ function League({ api, leagues, sel, setSel, onTeam }) {
     [leagues, q]
   );
 
+  const elegir = (id) => {
+    const lg = leagues.find((l) => l.league.id === id);
+    const cur = lg?.seasons.find((s) => s.current)?.year || seasonNow();
+    setSel((s) => ({ ...s, league: id, season: cur }));
+  };
+
   return (
     <div className="page">
       <div className="page-head">
         <h1 className="h1">Competición</h1>
         <div className="toolbar">
-          <input
-            className="input input-search"
-            placeholder="Buscar liga o copa"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
-          <select
-            className="input"
-            value={sel.league || ""}
-            onChange={(e) => {
-              const id = Number(e.target.value);
-              const lg = leagues.find((l) => l.league.id === id);
-              const cur = lg?.seasons.find((s) => s.current)?.year || seasonNow();
-              setSel((s) => ({ ...s, league: id, season: cur }));
-            }}
-          >
-            <option value="">Elige competición…</option>
-            {filtered.slice(0, 400).map((l) => (
-              <option key={l.league.id} value={l.league.id}>
-                {l.country.name} · {l.league.name}
-              </option>
-            ))}
-          </select>
+          {sel.league ? (
+            <button className="btn btn-ghost" onClick={() => setSel((s) => ({ ...s, league: null }))}
+              title="Elegir otra competición">
+              {league ? `${league.country.name} · ${league.league.name}` : "Elegir otra"} ✕
+            </button>
+          ) : (
+            <input
+              className="input input-search"
+              placeholder="Buscar liga o copa"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+            />
+          )}
           <select
             className="input mono"
             value={sel.season || ""}
@@ -87,6 +83,23 @@ function League({ api, leagues, sel, setSel, onTeam }) {
           </select>
         </div>
       </div>
+
+      {!sel.league && (
+        <>
+          {filtered.length ? (
+            <div className="league-grid">
+              {filtered.slice(0, 200).map((l) => (
+                <button key={l.league.id} className="league-tile" onClick={() => elegir(l.league.id)}>
+                  <Crest src={l.league.logo} alt="" size={32} />
+                  <span className="league-tile-name">{l.league.name}</span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <Empty title="Ningún resultado" hint="Prueba con otro nombre de liga, copa o país." />
+          )}
+        </>
+      )}
 
       {cov && (
         <>
@@ -117,9 +130,6 @@ function League({ api, leagues, sel, setSel, onTeam }) {
 
       {err && <div className="alert">{err}</div>}
       {busy && <Spinner />}
-      {!sel.league && !busy && (
-        <Empty title="Elige una competición" hint="Se cargan solo las que están en curso, para no gastar cuota." />
-      )}
 
       {standings?.map((group, gi) => (
         <section key={gi}>

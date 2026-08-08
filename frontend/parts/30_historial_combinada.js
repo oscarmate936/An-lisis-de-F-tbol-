@@ -56,6 +56,7 @@ async function alPortapapeles(txt) {
     exactamente lo que tú eliges, que no tiene por qué comportarse igual. */
 function Historial() {
   const [hist, setHist] = useState(null);
+  const [detalle, setDetalle] = useState(null);
 
   useEffect(() => {
     let vivo = true;
@@ -247,12 +248,17 @@ function Historial() {
                         {h.resultado === "ok" ? "sí" : h.resultado === "no" ? "no" : "parcial"}
                       </td>
                       <td>
-                        <button className="btn btn-quiet" onClick={async () => {
-                          const previo = await histRead();
-                          await histWrite(previo.filter((x) => x.id !== h.id));
-                          undoOfrecer([], `Borrada “${h.nombre}” del historial`,
-                            async () => { await histWrite(previo); });
-                        }}>Quitar</button>
+                        <OverflowMenu label={`Más opciones para ${h.nombre}`} items={[
+                          { label: "Ver detalle", onClick: () => setDetalle(h) },
+                          {
+                            label: "Quitar del historial", danger: true, onClick: async () => {
+                              const previo = await histRead();
+                              await histWrite(previo.filter((x) => x.id !== h.id));
+                              undoOfrecer([], `Borrada “${h.nombre}” del historial`,
+                                async () => { await histWrite(previo); });
+                            },
+                          },
+                        ]} />
                       </td>
                     </tr>
                   );
@@ -268,6 +274,36 @@ function Historial() {
         las de jugador de sus estadísticas del partido; córners y tarjetas quedan sin resolver en
         vez de darse por buenas.
       </p>
+
+      {detalle && (
+        <div className="modal-fondo" onClick={() => setDetalle(null)}>
+          <div className="modal" role="dialog" aria-label={detalle.nombre} onClick={(e) => e.stopPropagation()}>
+            <div className="card-head">
+              <h2 className="card-title">{detalle.nombre}</h2>
+              <button className="cb-x" aria-label="Cerrar" onClick={() => setDetalle(null)}>×</button>
+            </div>
+            <div className="card-body modal-scroll">
+              <p className="foot" style={{ marginTop: 0 }}>
+                {diaCorto(detalle.fecha)} · {pc(detalle.p)} de probabilidad conjunta ·{" "}
+                {detalle.n} {detalle.n === 1 ? "selección" : "selecciones"}
+              </p>
+              {detalle.picks.map((p, i) => (
+                <div key={i} className="list-row">
+                  <span className={"list-row-icon" + (p.res === "ok" ? " list-row-icon-ok" : p.res === "no" ? " list-row-icon-mal" : "")}>
+                    {p.res === "ok" ? "✓" : p.res === "no" ? "✕" : "…"}
+                  </span>
+                  <span className="list-row-text">
+                    <span className="list-row-title">{p.mercado}: {p.sel}</span>
+                    <span className="list-row-sub">
+                      {p.home && p.away ? `${p.home} — ${p.away} · ` : ""}{pc(p.p)}
+                    </span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

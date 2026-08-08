@@ -1561,8 +1561,11 @@ html[data-densidad="comoda"] .betval,html[data-densidad="comoda"] .ldside{paddin
    de cualquier pantalla de ajustes de Android. */
 .list-row{display:flex;align-items:center;gap:14px;padding:11px 2px;min-height:56px}
 .list-row-icon{flex:0 0 auto;width:40px;height:40px;border-radius:var(--pill);
-  background:var(--mark-soft);color:var(--mark);display:grid;place-items:center}
+  background:var(--mark-soft);color:var(--mark);display:grid;place-items:center;
+  font-size:14px;font-weight:700}
 .list-row-icon .ico{width:20px;height:20px}
+.list-row-icon-ok{background:rgba(127,219,166,.16);color:var(--win)}
+.list-row-icon-mal{background:rgba(255,180,171,.16);color:var(--red)}
 .list-row-text{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
 .list-row-title{font-size:14px;color:var(--chalk);font-weight:500}
 .list-row-sub{font-size:11.5px;color:var(--faint);line-height:1.45}
@@ -1579,6 +1582,72 @@ html[data-densidad="comoda"] .betval,html[data-densidad="comoda"] .ldside{paddin
 .switch:focus-visible{outline:2px solid var(--mark);outline-offset:2px}
 .switch:active::after{width:23px}
 .switch-on:active::after{transform:translateX(15px)}
+
+/* El icono de menú empuja todo lo demás a la derecha: sin el nav de
+   escritorio, la cuota es lo único que queda pegado al borde. */
+.brand{margin-right:auto}
+
+/* ---------- cajón lateral (side menu) ---------- */
+.drawer-fondo{position:fixed;inset:0;z-index:71;background:rgba(0,0,0,.55);
+  backdrop-filter:blur(2px);animation:aparece .15s ease-out}
+.drawer{position:fixed;left:0;top:0;bottom:0;width:min(300px,84vw);background:var(--surface);
+  border-right:1px solid var(--line-soft);box-shadow:14px 0 40px -14px rgba(0,0,0,.65);
+  display:flex;flex-direction:column;padding:20px 16px;animation:sale-cajon .2s cubic-bezier(.2,.8,.2,1)}
+@keyframes sale-cajon{from{transform:translateX(-100%)}}
+.drawer-head{display:flex;align-items:center;gap:10px;padding-bottom:16px;margin-bottom:4px}
+.drawer-email{display:block;font-size:11px;color:var(--faint);margin-top:3px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:190px}
+.drawer-tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+.drawer-tile{all:unset;cursor:pointer;box-sizing:border-box;display:flex;flex-direction:column;
+  gap:10px;padding:16px 14px;border-radius:var(--r);background:var(--turf2);color:var(--chalk);
+  font-size:12.5px;font-weight:500;transition:transform .08s,filter .15s}
+.drawer-tile:hover{filter:brightness(1.15)}
+.drawer-tile:active{transform:scale(.96)}
+.drawer-tile:focus-visible{outline:2px solid var(--mark);outline-offset:2px}
+.drawer-tile-icon{width:34px;height:34px;border-radius:var(--pill);background:var(--mark-soft);
+  color:var(--mark);display:grid;place-items:center}
+.drawer-tile-icon .ico{width:18px;height:18px}
+.drawer-x{all:unset;cursor:pointer;position:absolute;top:16px;right:14px;width:30px;height:30px;
+  display:grid;place-items:center;color:var(--faint);font-size:17px;border-radius:var(--pill)}
+.drawer-x:hover{color:var(--chalk);background:var(--turf2)}
+@media (min-width:760px){.drawer,.drawer-fondo{max-width:var(--phone)}.drawer{left:calc(50% - var(--phone)/2)}}
+
+/* ---------- barra timón: navegación + acción central acoplada ---------- */
+.tabbar-rudder{align-items:end;padding-top:14px;overflow:visible}
+.fab-dock{all:unset;cursor:pointer;box-sizing:border-box;position:relative;justify-self:center;
+  width:56px;height:56px;margin-top:-30px;border-radius:var(--pill);background:var(--mark);
+  color:var(--mark-ink);display:grid;place-items:center;box-shadow:0 10px 24px -8px rgba(0,0,0,.55),
+  0 0 0 6px var(--turf);transition:transform .1s}
+.fab-dock .ico{width:24px;height:24px}
+.fab-dock:active{transform:scale(.94)}
+.fab-dock-on{background:var(--sodium)}
+.fab-dock:focus-visible{outline:2px solid var(--chalk);outline-offset:2px}
+.fabbadge{position:absolute;top:-3px;right:-3px;font-size:9px;font-weight:700;line-height:1;
+  padding:2px 5px;border-radius:var(--pill);background:var(--red);color:#3C0000;font-style:normal;
+  box-shadow:0 0 0 2px var(--turf)}
+
+/* ---------- rejilla de ligas (grid) ---------- */
+.league-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:10px;margin-top:14px}
+.league-tile{all:unset;cursor:pointer;box-sizing:border-box;display:flex;flex-direction:column;
+  align-items:center;gap:8px;padding:12px 8px;border-radius:var(--r);background:var(--turf2);
+  text-align:center;transition:transform .08s,filter .15s}
+.league-tile:hover{filter:brightness(1.15)}
+.league-tile:active{transform:scale(.95)}
+.league-tile:focus-visible{outline:2px solid var(--mark);outline-offset:2px}
+.league-tile-on{background:var(--mark);color:var(--mark-ink)}
+.league-tile img{width:32px;height:32px;object-fit:contain;border-radius:6px}
+.league-tile-name{font-size:10.5px;line-height:1.25;overflow:hidden;display:-webkit-box;
+  -webkit-line-clamp:2;-webkit-box-orient:vertical}
+
+/* ---------- menú de tres puntos (overflow) ---------- */
+.overflow-btn{all:unset;cursor:pointer;width:30px;height:30px;border-radius:var(--pill);
+  display:grid;place-items:center;color:var(--faint);flex:0 0 auto}
+.overflow-btn:hover{color:var(--chalk);background:var(--turf2)}
+.overflow-btn:focus-visible{outline:2px solid var(--mark);outline-offset:1px}
+.ofitem{all:unset;cursor:pointer;box-sizing:border-box;display:flex;align-items:center;gap:12px;
+  width:100%;padding:12px 4px;font-size:13.5px;color:var(--chalk);border-radius:var(--r)}
+.ofitem:hover{background:var(--turf2)}
+.ofitem-mal{color:var(--red)}
 `}</style>
   );
 }

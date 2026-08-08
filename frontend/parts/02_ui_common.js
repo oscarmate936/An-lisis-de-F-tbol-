@@ -43,6 +43,43 @@ function Empty({ title, hint }) {
   );
 }
 
+/** El menú de tres puntos: agrupa acciones secundarias por fila para
+    no llenar la lista de botones sueltos. Se abre como una hoja
+    inferior, igual que el resto de menús de la app. */
+function OverflowMenu({ label = "Más opciones", items }) {
+  const [abierto, setAbierto] = useState(false);
+  return (
+    <>
+      <button className="overflow-btn" aria-label={label} onClick={() => setAbierto(true)}>
+        <svg viewBox="0 0 18 18" width="16" height="16" fill="currentColor" aria-hidden="true">
+          <circle cx="9" cy="3.6" r="1.5" /><circle cx="9" cy="9" r="1.5" /><circle cx="9" cy="14.4" r="1.5" />
+        </svg>
+      </button>
+      {abierto && ReactDOM.createPortal(
+        /* La fila que lo abre puede vivir dentro de una tabla con
+           content-visibility (para no pintar lo que no se ve), y eso
+           convierte a esa fila en el "contenedor" del position:fixed
+           de la hoja — se quedaría atrapada dentro de la tabla en vez
+           de cubrir la pantalla. Un portal a <body> lo evita siempre,
+           esté el botón donde esté. */
+        <div className="modal-fondo" onClick={() => setAbierto(false)}>
+          <div className="modal" role="menu" aria-label={label} onClick={(e) => e.stopPropagation()}>
+            <div className="card-body modal-scroll">
+              {items.map((it, i) => (
+                <button key={i} role="menuitem" className={"ofitem" + (it.danger ? " ofitem-mal" : "")}
+                  onClick={() => { setAbierto(false); it.onClick(); }}>
+                  {it.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+    </>
+  );
+}
+
 function Crest({ src, alt, size = 26 }) {
   return src ? (
     <img className="crest" src={src} alt={alt} width={size} height={size} loading="lazy" />

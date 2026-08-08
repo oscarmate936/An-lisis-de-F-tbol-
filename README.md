@@ -6,12 +6,22 @@ motor de modelos estadísticos (Dixon-Coles, Skellam, cópula gaussiana,
 Conway-Maxwell-Poisson, Elo, ensamble apilado...) y calibración/backtest
 de esos modelos.
 
-La interfaz sigue el lenguaje visual de Material 3 (Android): barra de
-navegación inferior fija, hojas que suben desde abajo en vez de
-diálogos centrados, botones de píldora, tipografía Roboto y una
-pantalla de Ajustes con interruptores. En pantallas anchas la app se
-ve dentro de un encuadre de teléfono centrado, en vez de estirarse a
-todo el ancho.
+La interfaz sigue el lenguaje visual y de interacción de Material 3
+(Android):
+
+- **Barra timón + FAB**: la combinada —la acción de firma de la
+  app— vive acoplada como botón flotante en el centro de la barra
+  inferior, no como una pestaña más.
+- **Cajón lateral**: Ajustes, Ayuda, tema y el atajo a "Mis ligas"
+  viven en un menú lateral con accesos rápidos en tarjetas grandes.
+- **Rejilla**: el selector de competición es una rejilla visual de
+  escudos, no un desplegable de texto.
+- **Hojas inferiores** en vez de diálogos centrados, con tirador,
+  para Ajustes, Ayuda, comparaciones y menús contextuales.
+- **Menú de tres puntos** en el historial de combinadas archivadas,
+  para ver el detalle o borrar sin llenar la fila de botones.
+- Tipografía Roboto, botones de píldora, y un encuadre de teléfono
+  centrado en pantallas anchas en vez de estirarse a todo el ancho.
 
 ## Cómo está organizado
 
@@ -42,7 +52,7 @@ todo el script en cada acción) no encaja con una SPA de este tamaño.
     ├── template_tail.html     # cierre de </script></body></html>
     └── parts/                 # el código de la SPA, cortado en módulos
         ├── 01_core_cache.js            # storage, caché (IndexedDB/localStorage), errores de la API
-        ├── 02_ui_common.js             # utilidades de UI compartidas (spinners, escudos, barras...)
+        ├── 02_ui_common.js             # utilidades de UI compartidas (spinners, escudos, menú de tres puntos...)
         ├── 03_connect.js               # pantalla de conexión / clave de API
         ├── 04_fixtures.js              # listado y buscador de partidos
         ├── 05_prob_engine.js           # núcleo de probabilidad (factoriales log, Poisson)
@@ -71,7 +81,7 @@ todo el script en cada acción) no encaja con una SPA de este tamaño.
         ├── 28_league_team.js           # vistas de liga y de equipo
         ├── 29_calibracion_ui.js        # pantalla de calibración de modelos
         ├── 30_historial_combinada.js   # historial, comparador, combinada (boleto)
-        ├── 31_app_shell.js             # ayuda, ajustes, y el componente App raíz
+        ├── 31_app_shell.js             # ayuda, ajustes, cajón lateral, y el componente App raíz
         ├── 32_styles.js                # todo el CSS-in-JS
         └── 33_bootstrap.js             # ReactDOM.createRoot(...).render(<App />)
 ```

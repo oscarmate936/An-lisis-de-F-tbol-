@@ -19,12 +19,14 @@ function Ico({ name }) {
   );
 }
 
+/* La combinada no vive aquí: es la acción central acoplada en la
+   barra inferior (ver FAB_SECCION), no una pestaña más. */
 const SECCIONES = [
   ["fixtures", "Cartelera"],
   ["league", "Competición"],
-  ["combinada", "Combinada"],
   ["calibracion", "Calibración"],
 ];
+const FAB_SECCION = ["combinada", "Combinada"];
 
 /* ============================================================
    Glosario
@@ -111,10 +113,12 @@ function Term({ id, children }) {
 }
 
 const ATAJOS = [
-  ["1 – 4", "Ir a Cartelera, Competición, Combinada o Calibración"],
+  ["1 – 3", "Ir a Cartelera, Competición o Calibración"],
+  ["4", "Abrir la combinada"],
   ["P", "Volver al partido abierto"],
   ["E", "Volver al equipo abierto"],
   ["B", "Buscar en la cartelera"],
+  ["M", "Abrir y cerrar el menú"],
   ["T", "Cambiar entre tema claro y oscuro"],
   ["Z", "Deshacer lo último que hayas quitado"],
   ["?", "Abrir y cerrar esta ayuda"],
@@ -166,8 +170,43 @@ function Ayuda({ onClose }) {
   );
 }
 
-/** Los iconos de la lista de ajustes: el mismo trazo fino que el
-    resto de la app, solo que aquí cada uno vive en su círculo tonal. */
+/** El cajón lateral: todo lo que no es "una sección" de la app pero
+    tampoco merece pelearse por sitio en la barra superior — ayuda,
+    ajustes, tema y el atajo a las ligas fijadas. Los cuatro accesos
+    más usados van en tarjetas grandes (menú rectangular); lo demás,
+    en una lista simple debajo. */
+function Drawer({ onClose, account, tema, cambiarTema, onAyuda, onAjustes, onLigas }) {
+  const tile = (name, label, onClick) => (
+    <button className="drawer-tile" onClick={() => { onClick(); onClose(); }}>
+      <span className="drawer-tile-icon"><AjIco name={name} /></span>
+      <span>{label}</span>
+    </button>
+  );
+  return (
+    <div className="drawer-fondo" onClick={onClose}>
+      <div className="drawer" role="dialog" aria-label="Menú" onClick={(e) => e.stopPropagation()}>
+        <div className="drawer-head">
+          <span className="brand-mark" aria-hidden="true" />
+          <span className="brand-txt">
+            <span className="brand-word">Pizarra</span>
+            <span className="drawer-email">{account?.account?.email || ""}</span>
+          </span>
+        </div>
+        <div className="drawer-tiles">
+          {tile("ajustes", "Ajustes", onAjustes)}
+          {tile("ayuda", "Ayuda", onAyuda)}
+          {tile("ligas", "Mis ligas", onLigas)}
+          {tile("tema", tema === "oscuro" ? "Tema claro" : "Tema oscuro", cambiarTema)}
+        </div>
+        <button className="drawer-x" aria-label="Cerrar menú" onClick={onClose}>×</button>
+      </div>
+    </div>
+  );
+}
+
+/** Los iconos de la lista de ajustes y del cajón lateral: el mismo
+    trazo fino que el resto de la app, solo que aquí cada uno vive en
+    su círculo tonal. */
 function AjIco({ name }) {
   const p = {
     tema: <><circle cx="9" cy="9" r="3.6" /><path d="M9 1.8v2M9 14.2v2M2.6 9h2M13.4 9h2M4.5 4.5l1.4 1.4M12.1 12.1l1.4 1.4M13.5 4.5l-1.4 1.4M5.9 12.1l-1.4 1.4" /></>,
@@ -176,6 +215,9 @@ function AjIco({ name }) {
     calculo: <><rect x="2.5" y="2.5" width="13" height="13" rx="3" /><path d="M6 9h6M9 6v6" /></>,
     copia: <><path d="M9 2.5v9M9 11.5 5.8 8.3M9 11.5l3.2-3.2" /><path d="M3 12.5v1.6c0 .8.7 1.4 1.5 1.4h9c.8 0 1.5-.6 1.5-1.4v-1.6" /></>,
     cuenta: <><circle cx="9" cy="6.2" r="3.2" /><path d="M2.8 15.2c.9-3 3.2-4.6 6.2-4.6s5.3 1.6 6.2 4.6" /></>,
+    ajustes: <><path d="M9 2v2.2M9 13.8V16M16 9h-2.2M4.2 9H2M13.5 4.5l-1.5 1.5M5.5 12l-1.5 1.5M13.5 13.5 12 12M5.5 6 4 4.5" /><circle cx="9" cy="9" r="3" /></>,
+    ayuda: <><circle cx="9" cy="9" r="6.5" /><path d="M6.9 7.1c.2-1.2 1.1-2 2.3-2 1.3 0 2.3.9 2.3 2 0 1.6-2.1 1.7-2.1 3.4" /><circle cx="9" cy="13" r=".2" fill="currentColor" /></>,
+    ligas: <><path d="M5 2.5h8v5.2c0 2.2-1.8 4-4 4s-4-1.8-4-4V2.5Z" /><path d="M5 4H2.7c0 2 1 3.3 2.6 3.6M13 4h2.3c0 2-1 3.3-2.6 3.6" /><path d="M9 11.7V15M6.3 15.5h5.4" /></>,
   }[name];
   return (
     <svg className="ico" viewBox="0 0 18 18" fill="none" stroke="currentColor"
@@ -382,6 +424,7 @@ function App() {
   const [slipN, setSlipN] = useState(0);
   const [ayuda, setAyuda] = useState(false);
   const [ajustes, setAjustes] = useState(false);
+  const [drawer, setDrawer] = useState(false);
   const [enLinea, setEnLinea] = useState(() =>
     typeof navigator === "undefined" || navigator.onLine !== false);
   const [aspecto, setAspectoRaw] = useState(() => {
@@ -560,15 +603,17 @@ function App() {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const t = e.target;
       if (t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable)) return;
-      if (e.key === "Escape") { setAyuda(false); setAjustes(false); return; }
+      if (e.key === "Escape") { setAyuda(false); setAjustes(false); setDrawer(false); return; }
       if (e.key === "?") { e.preventDefault(); setAyuda((v) => !v); return; }
-      const n = ["1", "2", "3", "4"].indexOf(e.key);
+      if (e.key === "4") { irA("combinada"); return; }
+      const n = ["1", "2", "3"].indexOf(e.key);
       if (n >= 0) { irA(SECCIONES[n][0]); return; }
       const k = e.key.toLowerCase();
       if (k === "p" && fixture) irA("match");
       else if (k === "e" && teamCtx) irA("team");
       else if (k === "t") cambiarTema();
       else if (k === "z") undoAplicar();
+      else if (k === "m") setDrawer((v) => !v);
       else if (k === "b") {
         irA("fixtures");
         setTimeout(() => {
@@ -612,6 +657,13 @@ function App() {
       <div className={"app" + (slipN > 0 ? " app-conslip" : "") + (hayContexto ? " app-ctx" : "")}>
         <header className="topbar">
           <div className="topbar-in">
+            <button className="iconbtn" title="Menú (M)" aria-label="Abrir menú"
+              onClick={() => setDrawer(true)}>
+              <svg className="ico" viewBox="0 0 18 18" fill="none" stroke="currentColor"
+                strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
+                <path d="M2.5 5h13M2.5 9h13M2.5 13h13" />
+              </svg>
+            </button>
             <div className="brand">
               <span className="brand-mark" aria-hidden="true" />
               <span className="brand-txt">
@@ -619,22 +671,6 @@ function App() {
                 <span className="brand-sub">terminal de análisis</span>
               </span>
             </div>
-
-            <nav className="nav" aria-label="Secciones">
-              {SECCIONES.map(([k, l], i) => (
-                <button
-                  key={k}
-                  className={"navbtn" + (view === k ? " navbtn-on" : "")}
-                  onClick={() => irA(k)}
-                  title={`${l} · tecla ${i + 1}`}
-                  aria-current={view === k ? "page" : undefined}
-                >
-                  <Ico name={k} />
-                  <span>{l}</span>
-                  {k === "combinada" && slipN > 0 && <i className="mono navbadge">{slipN}</i>}
-                </button>
-              ))}
-            </nav>
 
             <div className="topbar-right">
               <div className="qpill" title={`Plan ${account.subscription?.plan || "—"} · ${account.account?.email || ""}\n${meta.calls} llamadas hechas · ${meta.hits} servidas desde la caché`}>
@@ -647,14 +683,6 @@ function App() {
                     style={{ width: usedPct !== null ? Math.min(100, usedPct) + "%" : "0%" }} />
                 </div>
               </div>
-              <button className="iconbtn btn-atajos" title="Ayuda y glosario (?)"
-                aria-label="Ayuda" onClick={() => setAyuda(true)}>?</button>
-              <button className="iconbtn" title={tema === "claro" ? "Tema oscuro (T)" : "Tema claro (T)"}
-                aria-label="Cambiar de tema" onClick={cambiarTema}>
-                {tema === "claro" ? "◐" : "◑"}
-              </button>
-              <button className="iconbtn" title="Ajustes, copia de seguridad y cuenta"
-                aria-label="Ajustes" onClick={() => setAjustes(true)}>⚙</button>
             </div>
           </div>
 
@@ -747,15 +775,38 @@ function App() {
             onSalir={() => { setAjustes(false); disconnect(); }}
           />
         )}
+        {drawer && (
+          <Drawer
+            onClose={() => setDrawer(false)}
+            account={account} tema={tema} cambiarTema={cambiarTema}
+            onAyuda={() => setAyuda(true)}
+            onAjustes={() => setAjustes(true)}
+            onLigas={() => irA("league")}
+          />
+        )}
 
-        {/* En el móvil la navegación baja al pulgar. */}
-        <nav className="tabbar" aria-label="Secciones">
-          {SECCIONES.map(([k, l]) => (
+        {/* La navegación vive siempre abajo, al pulgar: tres secciones
+            y, en el centro, la combinada acoplada como acción central
+            (timón). No es una pestaña más — es LA acción de la app. */}
+        <nav className="tabbar tabbar-rudder" aria-label="Secciones">
+          {SECCIONES.slice(0, 2).map(([k, l]) => (
             <button key={k} className={"tabbtn" + (view === k ? " tabbtn-on" : "")}
               onClick={() => irA(k)} aria-current={view === k ? "page" : undefined}>
               <Ico name={k} />
               <span>{l}</span>
-              {k === "combinada" && slipN > 0 && <i className="mono tabbadge">{slipN}</i>}
+            </button>
+          ))}
+          <button className={"fab-dock" + (view === FAB_SECCION[0] ? " fab-dock-on" : "")}
+            title={`${FAB_SECCION[1]} · tecla 4`} aria-label={FAB_SECCION[1]}
+            onClick={() => irA(FAB_SECCION[0])}>
+            <Ico name={FAB_SECCION[0]} />
+            {slipN > 0 && <i className="mono fabbadge">{slipN}</i>}
+          </button>
+          {SECCIONES.slice(2).map(([k, l]) => (
+            <button key={k} className={"tabbtn" + (view === k ? " tabbtn-on" : "")}
+              onClick={() => irA(k)} aria-current={view === k ? "page" : undefined}>
+              <Ico name={k} />
+              <span>{l}</span>
             </button>
           ))}
         </nav>
