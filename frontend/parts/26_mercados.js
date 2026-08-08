@@ -26,6 +26,7 @@ function Mercados({ api, fixture, onBoleto }) {
   const [arb, setArb] = useState(null);
   const [arbBusy, setArbBusy] = useState(false);
   const [sensV, setSensV] = useState(0);
+  const [famSheet, setFamSheet] = useState(false);
   const [busca, setBusca] = useState("");
   /* En el móvil la barra ocupaba media pantalla con las fichas y el
      buscador. Se queda en una línea con lo esencial y se despliega. */
@@ -40,7 +41,6 @@ function Mercados({ api, fixture, onBoleto }) {
     LIVE_STATES.includes(fixture.fixture.status?.short) ? "En vivo" : "Resumen"
   );
   const [picks, setPicks] = useState([]);
-  const [openAdj, setOpenAdj] = useState(false);
   const [adj, setAdj] = useState({ h: 0, a: 0, ref: 1, tension: 1, starters: false, xg: true, ens: true, mkt: 0, api: 0, oddsMetodo: 'mediana' });
   const [sortProps, setSortProps] = useState({ campo: "gol", dir: -1 });
   const [filtroEq, setFiltroEq] = useState("todos");
@@ -1240,40 +1240,39 @@ function Mercados({ api, fixture, onBoleto }) {
           )}
         </div>
         <div className="mk-acts">
-          <button className="btn btn-ghost" onClick={() => downloadText(
-            `mercados-${home.name}-${away.name}.csv`,
-            toCSV(all, [["familia", (r) => r.fam], ["mercado", (r) => r.mercado],
-              ["seleccion", (r) => r.sel], ["probabilidad", (r) => r.p.toFixed(4)],
-              ["nota", (r) => r.nota || ""]]))}>
-            Exportar CSV
-          </button>
-          <button className="btn btn-ghost" onClick={() => downloadText(
-            `mercados-${home.name}-${away.name}.xls`,
-            toExcel([
-              { nombre: "Mercados", filas: all, cols: [["Familia", (r) => r.fam],
-                ["Mercado", (r) => r.mercado], ["Selección", (r) => r.sel],
-                ["Probabilidad", (r) => Number(r.p.toFixed(4))], ["Nota", (r) => r.nota || ""]] },
-              { nombre: "Modelo", filas: [{}], cols: [
-                ["Local", () => home.name], ["Visitante", () => away.name],
-                ["Goles esperados local", () => Number(model.lh.toFixed(3))],
-                ["Goles esperados visitante", () => Number(model.la.toFixed(3))],
-                ["Motor", () => base.motor],
-                ["Ventaja de campo", () => (base.mle ? Number(base.mle.gamma.toFixed(3)) : "")]] },
-              ...(propRows.length ? [{ nombre: "Jugadores", filas: propRows, cols: [
-                ["Jugador", (r) => r.name], ["Equipo", (r) => r.team],
-                ["Minutos estimados", (r) => Math.round(r.expMin)],
-                ["1+ a puerta", (r) => Number(r.sot1.toFixed(4))],
-                ["Marca", (r) => Number(r.gol.toFixed(4))],
-                ["Tarjeta", (r) => Number(r.tar.toFixed(4))]] }] : []),
-            ]), "application/vnd.ms-excel")}>
-            Excel
-          </button>
-          <button className="btn btn-ghost btn-wide" onClick={() => setOpenAdj((v) => !v)}>
-            {openAdj ? "Cerrar ajustes" : "Ajustes del modelo"}
-          </button>
+          <OverflowMenu label="Exportar" items={[
+            {
+              label: "Exportar CSV", onClick: () => downloadText(
+                `mercados-${home.name}-${away.name}.csv`,
+                toCSV(all, [["familia", (r) => r.fam], ["mercado", (r) => r.mercado],
+                  ["seleccion", (r) => r.sel], ["probabilidad", (r) => r.p.toFixed(4)],
+                  ["nota", (r) => r.nota || ""]])),
+            },
+            {
+              label: "Exportar Excel", onClick: () => downloadText(
+                `mercados-${home.name}-${away.name}.xls`,
+                toExcel([
+                  { nombre: "Mercados", filas: all, cols: [["Familia", (r) => r.fam],
+                    ["Mercado", (r) => r.mercado], ["Selección", (r) => r.sel],
+                    ["Probabilidad", (r) => Number(r.p.toFixed(4))], ["Nota", (r) => r.nota || ""]] },
+                  { nombre: "Modelo", filas: [{}], cols: [
+                    ["Local", () => home.name], ["Visitante", () => away.name],
+                    ["Goles esperados local", () => Number(model.lh.toFixed(3))],
+                    ["Goles esperados visitante", () => Number(model.la.toFixed(3))],
+                    ["Motor", () => base.motor],
+                    ["Ventaja de campo", () => (base.mle ? Number(base.mle.gamma.toFixed(3)) : "")]] },
+                  ...(propRows.length ? [{ nombre: "Jugadores", filas: propRows, cols: [
+                    ["Jugador", (r) => r.name], ["Equipo", (r) => r.team],
+                    ["Minutos estimados", (r) => Math.round(r.expMin)],
+                    ["1+ a puerta", (r) => Number(r.sot1.toFixed(4))],
+                    ["Marca", (r) => Number(r.gol.toFixed(4))],
+                    ["Tarjeta", (r) => Number(r.tar.toFixed(4))]] }] : []),
+                ]), "application/vnd.ms-excel"),
+            },
+          ]} />
         </div>
 
-        {openAdj && (
+        <Collapsible title="Ajustes del modelo">
           <div className="adjbox">
             <label className="adj">
               <span>Ataque {home.name}</span>
@@ -1414,7 +1413,7 @@ function Mercados({ api, fixture, onBoleto }) {
               {fixture.fixture.referee ? ` Árbitro designado: ${fixture.fixture.referee}.` : ""}
             </p>
           </div>
-        )}
+        </Collapsible>
       </div>
       </section>
       </aside>
@@ -1532,22 +1531,61 @@ function Mercados({ api, fixture, onBoleto }) {
           </div>
         </div>
         <div className="card-body card-flush">
-      <div className="famnav">
-        {(model.live ? ["En vivo", ...FAMS_BASE] : FAMS_BASE).map((f) => {
-          const n = f === "Jugadores" ? (propRows.length || 0)
-            : ["Mercado", "En vivo", "Resumen"].includes(f) ? 0 : mkFam(f).length;
-          // Un punto donde ya has marcado algo: con doce familias, sin
-          // esto hay que entrar en todas para recordar dónde estabas.
-          const mias = picks.filter((p) => p.fam === f).length;
-          return (
-            <button key={f} className={"fambtn" + (fam === f ? " fambtn-on" : "")} onClick={() => setFam(f)}>
-              {f}
-              {mias > 0 && <em className="fambtn-marca" title={`${mias} seleccionadas aquí`} />}
-              {n > 0 && <i className="mono">{n}</i>}
-            </button>
-          );
-        })}
-      </div>
+      {(() => {
+        const familias = model.live ? ["En vivo", ...FAMS_BASE] : FAMS_BASE;
+        const contarFam = (f) => f === "Jugadores" ? (propRows.length || 0)
+          : ["Mercado", "En vivo", "Resumen"].includes(f) ? 0 : mkFam(f).length;
+        // Un punto donde ya has marcado algo: con doce familias, sin
+        // esto hay que entrar en todas para recordar dónde estabas.
+        const marcasFam = (f) => picks.filter((p) => p.fam === f).length;
+        return (
+          <>
+            <div className="famnav">
+              {familias.map((f) => (
+                <button key={f} className={"fambtn" + (fam === f ? " fambtn-on" : "")} onClick={() => setFam(f)}>
+                  {f}
+                  {marcasFam(f) > 0 && <em className="fambtn-marca" title={`${marcasFam(f)} seleccionadas aquí`} />}
+                  {contarFam(f) > 0 && <i className="mono">{contarFam(f)}</i>}
+                </button>
+              ))}
+              <button className="fambtn fambtn-grid" aria-label="Ver todos los mercados en una rejilla"
+                title="Ver todos" onClick={() => setFamSheet(true)}>
+                <svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor"
+                  strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <rect x="2.5" y="2.5" width="5.5" height="5.5" rx="1.2" />
+                  <rect x="10" y="2.5" width="5.5" height="5.5" rx="1.2" />
+                  <rect x="2.5" y="10" width="5.5" height="5.5" rx="1.2" />
+                  <rect x="10" y="10" width="5.5" height="5.5" rx="1.2" />
+                </svg>
+              </button>
+            </div>
+
+            {famSheet && (
+              <div className="modal-fondo" onClick={() => setFamSheet(false)}>
+                <div className="modal" role="dialog" aria-label="Todos los mercados" onClick={(e) => e.stopPropagation()}>
+                  <div className="card-head">
+                    <h2 className="card-title">Todos los mercados</h2>
+                    <button className="cb-x" aria-label="Cerrar" onClick={() => setFamSheet(false)}>×</button>
+                  </div>
+                  <div className="card-body modal-scroll">
+                    <div className="league-grid">
+                      {familias.map((f) => (
+                        <button key={f} className={"league-tile" + (fam === f ? " league-tile-on" : "")}
+                          onClick={() => { setFam(f); setFamSheet(false); }}>
+                          <span className="fam-tile-n mono">{contarFam(f) || ""}</span>
+                          <span className="league-tile-name">
+                            {f}{marcasFam(f) > 0 && <i className="fambtn-marca" style={{ marginLeft: 4 }} />}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        );
+      })()}
 
       <div className="fampanel">
         {fam === "Resumen" && (() => {

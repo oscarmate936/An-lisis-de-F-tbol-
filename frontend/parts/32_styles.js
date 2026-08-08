@@ -1675,6 +1675,19 @@ html[data-densidad="comoda"] .betval,html[data-densidad="comoda"] .ldside{paddin
 .ptr-listo .ptr-ico{transform:rotate(180deg)}
 .ptr-cargando .ptr-ico{animation:gira 0.7s linear infinite}
 @keyframes gira{to{transform:rotate(360deg)}}
+
+/* ---------- navegación de familias de mercado: tira + rejilla ---------- */
+/* Con hasta trece familias, envolverlas en varias filas de píldoras
+   no organiza nada — solo alarga la pantalla. Se quedan en una sola
+   tira que se desliza (como cualquier fila de pestañas de Android) y
+   el botón de rejilla al final abre todas de un vistazo, para saltar
+   directo sin deslizar una por una. */
+.famnav{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.famnav::-webkit-scrollbar{display:none}
+.fambtn{flex:0 0 auto;white-space:nowrap}
+.fambtn-grid{flex:0 0 auto;padding:6px 10px;position:sticky;right:0;background:var(--surface);
+  box-shadow:-10px 0 8px -4px var(--surface)}
+.fam-tile-n{font-size:9px;color:var(--faint);font-weight:600}
 `}</style>
   );
 }
