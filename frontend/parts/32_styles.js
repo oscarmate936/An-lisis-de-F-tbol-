@@ -1408,7 +1408,6 @@ html[data-densidad="comoda"] .betval,html[data-densidad="comoda"] .ldside{paddin
   .tabbadge{position:absolute;top:9px;left:calc(50% + 6px);font-size:9px;font-weight:700;
     line-height:1;padding:2px 5px;border-radius:var(--pill);background:var(--mark);
     color:var(--mark-ink);font-style:normal}
-  .app-conslip{--tabh:126px}
   .builder{bottom:calc(60px + env(safe-area-inset-bottom))}
 
   /* combinada */
@@ -1421,7 +1420,6 @@ html[data-densidad="comoda"] .betval,html[data-densidad="comoda"] .ldside{paddin
   .cb-swap-flecha{display:none}
   .cb-swap-res{text-align:left;flex-direction:row;align-items:baseline;gap:8px}
   .undo{left:12px;right:12px;bottom:calc(72px + env(safe-area-inset-bottom));max-width:none}
-  .app-conslip .undo{bottom:calc(140px + env(safe-area-inset-bottom))}
   .bol-bar{margin-top:0}
   .cb-viejos{gap:8px}
   .btn-atajos{display:none}
@@ -1453,7 +1451,6 @@ html[data-densidad="comoda"] .betval,html[data-densidad="comoda"] .ldside{paddin
   .cb-tip{position:fixed;left:12px;right:12px;bottom:auto;top:auto;transform:none;
     max-width:none;width:auto}
   .aviso-flotante{bottom:calc(72px + env(safe-area-inset-bottom))}
-  .app-conslip .aviso-flotante{bottom:calc(140px + env(safe-area-inset-bottom))}
   .lg-abrir{padding-left:14px}
   .builder-in{padding:10px 14px;gap:10px}
   .bbuscar{flex:1 1 100%;order:3}
@@ -1579,8 +1576,6 @@ html[data-densidad="comoda"] .betval,html[data-densidad="comoda"] .ldside{paddin
   background:var(--turf2);border-color:var(--line-soft);box-shadow:var(--sh2)}
 .aviso-flotante{border-radius:var(--pill)}
 .undo{border-radius:var(--r)}
-.app-conslip .aviso-flotante,.app-conslip .undo{
-  bottom:calc(84px + var(--tabh) + env(safe-area-inset-bottom))}
 
 /* Listas de ajustes: icono en círculo tonal a la izquierda, título y
    subtítulo en el centro, control a la derecha — la gramática visual
@@ -1759,7 +1754,6 @@ html[data-densidad="comoda"] .betval,html[data-densidad="comoda"] .ldside{paddin
 .volver-arriba:hover{filter:brightness(1.15)}
 .volver-arriba:focus-visible{outline:2px solid var(--mark);outline-offset:2px}
 .volver-arriba:active{transform:scale(.92)}
-.app-conslip .volver-arriba{bottom:calc(84px + var(--tabh) + env(safe-area-inset-bottom))}
 `}</style>
   );
 }

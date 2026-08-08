@@ -803,7 +803,7 @@ function App() {
   return (
     <>
       <Styles />
-      <div className={"app" + (slipN > 0 ? " app-conslip" : "") + (hayContexto ? " app-ctx" : "")}>
+      <div className={"app" + (hayContexto ? " app-ctx" : "")}>
         <header className="topbar">
           <div className="topbar-in">
             <button ref={menuBtnRef} className="iconbtn" title="Menú (M)" aria-label="Abrir menú"
