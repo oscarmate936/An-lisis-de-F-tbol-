@@ -1,0 +1,63 @@
+name: Compilar APK de Android
+
+# Este runner de GitHub sí tiene salida a internet hacia los
+# repositorios de Google (dl.google.com / maven.google.com), que es
+# justo lo que hace falta para bajar el SDK de Android y el plugin de
+# Gradle — nada de eso es alcanzable desde un entorno de desarrollo
+# aislado, así que el APK se compila aquí, no en local.
+on:
+  push:
+    branches:
+      - "**"
+    paths:
+      - "android-app/**"
+      - "frontend/**"
+      - ".github/workflows/build-android-apk.yml"
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android-app
+    steps:
+      - name: Descargar el repositorio
+        uses: actions/checkout@v4
+
+      - name: Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: SDK de Android
+        uses: android-actions/setup-android@v3
+
+      - name: Instalar dependencias de Capacitor
+        run: npm ci
+
+      - name: Ensamblar la interfaz (frontend/parts/*.js -> www/index.html)
+        run: python3 build_www.py
+
+      - name: Sincronizar el proyecto nativo con la web ensamblada
+        run: npx cap sync android
+
+      - name: Dar permiso de ejecución a gradlew
+        run: chmod +x android/gradlew
+
+      - name: Compilar el APK de depuración
+        working-directory: android-app/android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Publicar el APK como artefacto descargable
+        uses: actions/upload-artifact@v4
+        with:
+          name: pizarra-debug-apk
+          path: android-app/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error

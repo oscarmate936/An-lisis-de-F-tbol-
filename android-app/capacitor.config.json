@@ -1,0 +1,23 @@
+{
+  "appId": "com.pizarra.terminal",
+  "appName": "Pizarra",
+  "webDir": "www",
+  "backgroundColor": "#0F1116",
+  "android": {
+    "backgroundColor": "#0F1116",
+    "allowMixedContent": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 500,
+      "backgroundColor": "#0F1116",
+      "androidSplashResourceName": "splash",
+      "androidScaleType": "CENTER_CROP",
+      "showSpinner": false
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#0F1116"
+    }
+  }
+}

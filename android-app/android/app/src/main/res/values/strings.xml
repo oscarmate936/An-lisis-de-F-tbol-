@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Pizarra</string>
+    <string name="title_activity_main">Pizarra</string>
+    <string name="package_name">com.pizarra.terminal</string>
+    <string name="custom_url_scheme">com.pizarra.terminal</string>
+</resources>

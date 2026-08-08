@@ -1,0 +1,7 @@
+node_modules/
+
+# La interfaz se vuelve a ensamblar con build_www.py a partir de
+# frontend/parts/ (la misma fuente que usa la versión de Streamlit):
+# nunca se guarda aquí un HTML ya construido que podría quedar
+# desactualizado respecto al código real.
+www/

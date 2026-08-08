@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- El violeta de la marca (--mark), el fondo oscuro (--pitch) y su
+         variante para la barra de estado/navegación del sistema. -->
+    <color name="colorPrimary">#8E7CFF</color>
+    <color name="colorPrimaryDark">#0F1116</color>
+    <color name="colorAccent">#F0B23F</color>
+    <color name="splash_background">#0F1116</color>
+</resources>

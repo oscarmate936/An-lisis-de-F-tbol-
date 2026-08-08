@@ -175,6 +175,15 @@ puede desplegar tal cual en [Streamlit Community Cloud](https://streamlit.io/clo
 u otro hosting compatible con Streamlit, apuntando a `app.py` como
 archivo principal.
 
+## También existe como app de Android
+
+La misma interfaz, mismo diseño y misma funcionalidad, empaquetada
+como app instalable (`.apk`) con Capacitor — sin backend de Streamlit
+de por medio, con React/ReactDOM/Babel servidos en local en vez de
+desde un CDN. Ver [`android-app/README.md`](android-app/README.md)
+para cómo conseguir el APK (se compila solo en GitHub Actions en cada
+push) o compilarlo en local con Android Studio.
+
 ## Notas
 
 - La interfaz carga React, ReactDOM y Babel desde `cdnjs.cloudflare.com`
