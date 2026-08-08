@@ -35,11 +35,24 @@ Y de comportamiento, no solo de estilo:
   sin entrar primero al partido.
 - **Tirar para refrescar**: en la cartelera, el gesto de Android de
   siempre, además del botón "Actualizar" que ya había.
-- **Secciones plegables** en Mercados para el contenido más opcional
-  (qué pasa si me equivoco, hándicap europeo...), dejando arriba lo
-  que casi todo el mundo mira.
+- **Secciones plegables** en Mercados y en Calibración para el
+  contenido más opcional o denso (qué pasa si me equivoco, hándicap
+  europeo, dónde falla el modelo, parámetros, validación cruzada...),
+  dejando arriba lo que casi todo el mundo mira primero.
 - **Vibración breve** en la acción central (FAB), los interruptores y
   las acciones del menú de tres puntos, donde el navegador lo permite.
+- **Sugerencias de búsqueda** en la cartelera: al escribir aparecen
+  equipos y ligas que coinciden, para no tener que escribir el nombre
+  entero ni adivinar cómo lo llama la API.
+- **Bienvenida guiada**: la primera vez que se entra, dos avisos
+  breves señalan el menú lateral y la combinada antes de dejar a la
+  persona sola con la pantalla. Se puede saltar, y no vuelve a
+  aparecer (marca en `localStorage`).
+- **Caché del código compilado**: la interfaz se compila con Babel en
+  el navegador (no hay paso de build), así que la primera visita paga
+  ese coste; las siguientes arrancan con el JavaScript ya compilado
+  guardado en `localStorage`, bastante más rápido, con recuperación
+  automática si esa caché quedara corrupta.
 - **Icono y nombre propios** al guardar la app como acceso directo o
   marcador (`manifest.json` + iconos). *Nota honesta*: no llega a ser
   una PWA instalable de verdad — se probó registrar un service worker
@@ -47,6 +60,12 @@ Y de comportamiento, no solo de estilo:
   servir archivos estáticos (`app/static/`) no alcanza a cubrir la
   página real de la app. Sin ese service worker no hay ventana propia
   sin barra de navegador, solo un acceso directo con buen icono.
+
+Y de accesibilidad: todo lo interactivo tiene un anillo de foco visible
+al navegar con teclado (Tab), y lo que solo se alcanzaba con un gesto
+de puntero tiene también su equivalente de teclado — por ejemplo, el
+menú contextual de un partido (pulsación larga) también se abre con
+Mayús+F10 o la tecla Menú, como cualquier menú contextual nativo.
 
 ## Cómo está organizado
 

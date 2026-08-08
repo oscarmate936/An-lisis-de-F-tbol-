@@ -10,6 +10,7 @@ function Fixtures({ api, onOpen, onTeam, leagues }) {
   const [filtro, setFiltro] = useState("todos");
   const [vistaLista, setVistaLista] = useState("ligas");
   const [favs, setFavs] = useState(() => new Set());
+  const [buscando, setBuscando] = useState(false);
 
   /* La combinada ya sabía de la cartelera; faltaba que la cartelera
      supiera de la combinada. */
@@ -127,6 +128,32 @@ function Fixtures({ api, onOpen, onTeam, leagues }) {
         (a.league.country + a.league.name).localeCompare(b.league.country + b.league.name));
   }, [rows, q, favs, marcados, filtro]);
 
+  /* Sugerencias mientras se escribe: equipos y ligas que coinciden, para
+     no tener que escribir el nombre entero ni adivinar cómo lo llama la
+     API. Tocar una la escribe entera y la lista de abajo hace el resto. */
+  const sugerencias = useMemo(() => {
+    const t = q.trim().toLowerCase();
+    if (!rows || t.length < 2) return [];
+    const vistos = new Set();
+    const out = [];
+    for (const r of rows) {
+      for (const [tipo, nombre, sub] of [
+        ["equipo", r.teams.home.name, r.league.name],
+        ["equipo", r.teams.away.name, r.league.name],
+        ["liga", r.league.name, r.league.country],
+      ]) {
+        const key = tipo + ":" + nombre;
+        if (vistos.has(key) || !nombre.toLowerCase().includes(t)) continue;
+        vistos.add(key);
+        out.push({ tipo, nombre, sub, empieza: nombre.toLowerCase().startsWith(t) });
+      }
+    }
+    return out
+      .sort((a, b) => b.empieza - a.empieza || a.nombre.localeCompare(b.nombre))
+      .slice(0, 6)
+      .filter((s) => s.nombre.toLowerCase() !== t);
+  }, [rows, q]);
+
   /* Vista por horas: la cartelera cronológica de todo el día, que es como
      se mira cuando lo que importa es a qué hora empieza cada cosa. */
   const porHora = useMemo(
@@ -181,12 +208,32 @@ function Fixtures({ api, onOpen, onTeam, leagues }) {
           </p>
         </div>
         <div className="toolbar">
-          <input
-            className="input input-search"
-            placeholder="Buscar equipo, liga o país"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
+          <div className="fx-search-wrap">
+            <input
+              className="input input-search"
+              placeholder="Buscar equipo, liga o país"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              onFocus={() => setBuscando(true)}
+              onBlur={() => setTimeout(() => setBuscando(false), 150)}
+              onKeyDown={(e) => { if (e.key === "Escape") { setBuscando(false); e.currentTarget.blur(); } }}
+              role="combobox" aria-expanded={buscando && sugerencias.length > 0} aria-autocomplete="list"
+            />
+            {buscando && sugerencias.length > 0 && (
+              <div className="fx-sug" role="listbox">
+                {sugerencias.map((s, i) => (
+                  <button key={s.tipo + s.nombre} className="fx-sug-item" role="option"
+                    onClick={() => { toque(); setQ(s.nombre); setBuscando(false); }}>
+                    <span className={"fx-sug-tag" + (s.tipo === "equipo" ? " fx-sug-tag-eq" : " fx-sug-tag-lg")}>
+                      {s.tipo === "equipo" ? "Equipo" : "Liga"}
+                    </span>
+                    <span className="fx-sug-nombre">{s.nombre}</span>
+                    <span className="fx-sug-sub">{s.sub}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           {q && (
             <button className="btn btn-quiet" onClick={() => setQ("")} aria-label="Limpiar búsqueda">
               Limpiar

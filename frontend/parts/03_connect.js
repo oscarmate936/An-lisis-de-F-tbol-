@@ -85,7 +85,8 @@ const FxRow = React.memo(function FxRow({ f, n, onOpen, onTeam, fav, onFijar, li
   const press = useLongPress(() => setMenu(true));
   return (
     <>
-      <button className={"fx" + (n ? " fx-marcada" : "")} onContextMenu={(e) => e.preventDefault()}
+      <button className={"fx" + (n ? " fx-marcada" : "")}
+        onContextMenu={(e) => { e.preventDefault(); setMenu(true); }}
         onPointerDown={press.onPointerDown} onPointerMove={press.onPointerMove}
         onPointerUp={press.onPointerUp} onPointerCancel={press.onPointerCancel}
         onClick={(e) => press.onClick(e, () => onOpen(f))}>

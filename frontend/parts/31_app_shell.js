@@ -451,6 +451,9 @@ function App() {
   const [ayuda, setAyuda] = useState(false);
   const [ajustes, setAjustes] = useState(false);
   const [drawer, setDrawer] = useState(false);
+  const menuBtnRef = useRef(null);
+  const fabBtnRef = useRef(null);
+  const [coach, setCoach] = useState(false);
   const [enLinea, setEnLinea] = useState(() =>
     typeof navigator === "undefined" || navigator.onLine !== false);
   const [aspecto, setAspectoRaw] = useState(() => {
@@ -544,6 +547,18 @@ function App() {
     return () => clearTimeout(t);
   }, [account, view, fixture, teamCtx]);
 
+  /* La primera vez que se entra, dos toques rápidos señalan el menú y
+     la combinada antes de dejar a la persona sola con la pantalla. Una
+     marca en localStorage evita repetirlo en cada visita. */
+  useEffect(() => {
+    if (!account) return;
+    let visto = true;
+    try { visto = localStorage.getItem("onboarding:v1") === "1"; } catch (e) { return; }
+    if (visto) return;
+    const t = setTimeout(() => setCoach(true), 600);
+    return () => clearTimeout(t);
+  }, [account]);
+
   async function connect(k, silent = false) {
     setGateBusy(true);
     setGateErr(null);
@@ -630,7 +645,11 @@ function App() {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const t = e.target;
       if (t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable)) return;
-      if (e.key === "Escape") { setAyuda(false); setAjustes(false); setDrawer(false); return; }
+      if (e.key === "Escape") {
+        setAyuda(false); setAjustes(false); setDrawer(false);
+        if (coach) { try { localStorage.setItem("onboarding:v1", "1"); } catch (er) { /* nada */ } setCoach(false); }
+        return;
+      }
       if (e.key === "?") { e.preventDefault(); setAyuda((v) => !v); return; }
       if (e.key === "4") { irA("combinada"); return; }
       const n = ["1", "2", "3"].indexOf(e.key);
@@ -651,7 +670,7 @@ function App() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [account, fixture, teamCtx, cambiarTema, irA]);
+  }, [account, fixture, teamCtx, cambiarTema, irA, coach]);
 
   if (booting)
     return (
@@ -684,7 +703,7 @@ function App() {
       <div className={"app" + (slipN > 0 ? " app-conslip" : "") + (hayContexto ? " app-ctx" : "")}>
         <header className="topbar">
           <div className="topbar-in">
-            <button className="iconbtn" title="Menú (M)" aria-label="Abrir menú"
+            <button ref={menuBtnRef} className="iconbtn" title="Menú (M)" aria-label="Abrir menú"
               onClick={() => setDrawer(true)}>
               <svg className="ico" viewBox="0 0 18 18" fill="none" stroke="currentColor"
                 strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
@@ -823,7 +842,7 @@ function App() {
               <span>{l}</span>
             </button>
           ))}
-          <button className={"fab-dock" + (view === FAB_SECCION[0] ? " fab-dock-on" : "")}
+          <button ref={fabBtnRef} className={"fab-dock" + (view === FAB_SECCION[0] ? " fab-dock-on" : "")}
             title={`${FAB_SECCION[1]} · tecla 4`} aria-label={FAB_SECCION[1]}
             onClick={() => { toque(12); irA(FAB_SECCION[0]); }}>
             <Ico name={FAB_SECCION[0]} />
@@ -837,6 +856,18 @@ function App() {
             </button>
           ))}
         </nav>
+
+        {coach && (
+          <Coachmarks
+            pasos={[
+              { ref: menuBtnRef, titulo: "Tu menú",
+                texto: "Ajustes, ayuda y tus ligas fijadas viven aquí. La tecla M lo abre y lo cierra." },
+              { ref: fabBtnRef, titulo: "Arma tu combinada",
+                texto: "Añade selecciones desde cualquier partido y ciérrala aquí en el centro. La tecla 4 salta directo." },
+            ]}
+            onSalir={() => setCoach(false)}
+          />
+        )}
       </div>
     </>
   );

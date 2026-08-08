@@ -9,6 +9,7 @@ un único archivo de más de 11 000 líneas.
 """
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 
 FRONTEND_DIR = Path(__file__).parent / "frontend"
@@ -24,6 +25,15 @@ def build_html() -> str:
         raise FileNotFoundError(f"No se encontraron módulos .js en {PARTS_DIR}")
 
     body = "".join(part.read_text(encoding="utf-8") for part in parts)
+
+    # El navegador guarda el JSX ya compilado en localStorage para no
+    # tener que volver a pasarlo por Babel en cada visita. La clave de
+    # esa caché es un hash del propio código: en cuanto algo cambia
+    # aquí, el hash cambia, la caché vieja se descarta sola y el
+    # navegador compila la versión nueva una vez más.
+    build_hash = hashlib.sha1(body.encode("utf-8")).hexdigest()[:16]
+    tail = tail.replace("__BUILD_HASH__", build_hash)
+
     return head + body + tail
 
 

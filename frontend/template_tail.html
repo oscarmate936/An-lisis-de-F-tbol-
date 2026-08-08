@@ -1,3 +1,87 @@
 </script>
+<script>
+/* La interfaz entera se compila con Babel dentro del navegador — no
+   hay paso de build, cualquier archivo de frontend/parts/ se edita y
+   ya está. El precio es compilar unos 550 KB de JSX en cada visita.
+   Aquí se guarda el resultado ya compilado en localStorage la primera
+   vez, con la versión del propio código como clave: mientras el
+   código no cambie, las siguientes visitas se saltan Babel entero y
+   arrancan con JavaScript ya compilado.
+
+   Un script insertado a mano con appendChild se ejecuta en su propio
+   turno: si dentro falla, ese fallo NO llega como excepción hasta
+   aquí por mucho try/catch que se le ponga alrededor —se convierte
+   en un error global sin dueño—, así que la única manera fiable de
+   detectar una caché corrompida es escuchar ese error y, si aparece
+   justo después de ejecutar lo cacheado, tirar la caché y recargar
+   una vez para compilar de cero. La marca en sessionStorage evita
+   que un fallo real del propio código (no de la caché) deje a la
+   página recargándose sin parar. */
+(function () {
+  var BUILD_HASH = "__BUILD_HASH__";
+  var CACHE_KEY = "compilado:v1:" + BUILD_HASH;
+  var RECOVERY_FLAG = "compilado:recuperando:" + BUILD_HASH;
+  var fuente = document.getElementById("app-source").textContent;
+
+  function ejecutar(codigo) {
+    var s = document.createElement("script");
+    s.textContent = codigo;
+    document.body.appendChild(s);
+  }
+
+  function limpiarCacheVieja() {
+    try {
+      for (var i = localStorage.length - 1; i >= 0; i--) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf("compilado:v1:") === 0 && k !== CACHE_KEY) localStorage.removeItem(k);
+      }
+    } catch (e) { /* sin acceso a localStorage: no pasa nada */ }
+  }
+
+  function compilarYGuardar() {
+    var codigo = Babel.transform(fuente, { presets: ["react"] }).code;
+    try {
+      limpiarCacheVieja();
+      localStorage.setItem(CACHE_KEY, codigo);
+    } catch (e) { /* sin espacio o sin acceso: se ejecuta igual, solo que sin caché */ }
+    return codigo;
+  }
+
+  var cacheado = null;
+  try { cacheado = localStorage.getItem(CACHE_KEY); } catch (e) { /* sin acceso */ }
+
+  if (!cacheado) {
+    ejecutar(compilarYGuardar());
+    return;
+  }
+
+  var yaIntentadoRecuperar = false;
+  try { yaIntentadoRecuperar = sessionStorage.getItem(RECOVERY_FLAG) === "1"; } catch (e) { /* nada */ }
+
+  if (yaIntentadoRecuperar) {
+    // Ya se intentó descartar la caché una vez en esta pestaña y el
+    // error sigue: no es la caché, es el propio código. Se compila
+    // fresco sin más vueltas, sin arriesgarse a recargar en bucle.
+    ejecutar(compilarYGuardar());
+    return;
+  }
+
+  var falloDetectado = false;
+  function alError() { falloDetectado = true; }
+  window.addEventListener("error", alError);
+
+  ejecutar(cacheado);
+
+  setTimeout(function () {
+    window.removeEventListener("error", alError);
+    if (!falloDetectado) return;
+    // Lo cacheado falló al ejecutarse: se descarta, se marca el
+    // intento y se recarga una vez para arrancar de cero.
+    try { localStorage.removeItem(CACHE_KEY); } catch (e) { /* nada */ }
+    try { sessionStorage.setItem(RECOVERY_FLAG, "1"); } catch (e) { /* nada */ }
+    location.reload();
+  }, 300);
+})();
+</script>
 </body>
 </html>

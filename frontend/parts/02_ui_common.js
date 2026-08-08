@@ -107,8 +107,25 @@ function Empty({ title, hint }) {
     opcional —el "qué pasa si me equivoco" de Mercados, por ejemplo—
     deja a la vista lo que casi todos quieren y esconde el resto de
     un toque, en vez de obligar a pasar de largo con el dedo. */
-function Collapsible({ title, defaultOpen = false, children }) {
+function Collapsible({ title, note, defaultOpen = false, variant = "acc", children }) {
   const [abierto, setAbierto] = useState(defaultOpen);
+  if (variant === "card") {
+    return (
+      <section className={"card" + (abierto ? " acc-on" : "")}>
+        <button className="card-head card-head-toggle" aria-expanded={abierto} onClick={() => setAbierto((v) => !v)}>
+          <span className="card-head-toggle-label">
+            <h2 className="card-title">{title}</h2>
+            {note && <span className="card-note">{note}</span>}
+          </span>
+          <svg className="acc-chev" viewBox="0 0 18 18" width="14" height="14" fill="none"
+            stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M5 7l4 4 4-4" />
+          </svg>
+        </button>
+        {abierto && <div className="card-body">{children}</div>}
+      </section>
+    );
+  }
   return (
     <div className={"acc" + (abierto ? " acc-on" : "")}>
       <button className="acc-head" aria-expanded={abierto} onClick={() => setAbierto((v) => !v)}>
@@ -145,7 +162,8 @@ function OverflowMenu({ label = "Más opciones", items, trigger = true, open, on
   return (
     <>
       {trigger && (
-        <button className="overflow-btn" aria-label={label} onClick={() => setAbierto(true)}>
+        <button className="overflow-btn" aria-label={label} aria-haspopup="menu" aria-expanded={abierto}
+          onClick={() => setAbierto(true)}>
           <svg viewBox="0 0 18 18" width="16" height="16" fill="currentColor" aria-hidden="true">
             <circle cx="9" cy="3.6" r="1.5" /><circle cx="9" cy="9" r="1.5" /><circle cx="9" cy="14.4" r="1.5" />
           </svg>
@@ -184,14 +202,26 @@ function Swipeable({ children, actionLabel, onAction, danger = true }) {
   const [dx, setDx] = useState(0);
   const arrastre = useRef(null);
   const MAX = 92;
+  const UMBRAL_ARRASTRE = 4;
 
+  /* Capturar el puntero de golpe en cuanto se apoya el dedo se lleva
+     por delante el toque en cualquier botón de dentro de la fila (el
+     menú de tres puntos, por ejemplo): mousedown y mouseup dejan de
+     compartir objetivo y el clic nunca llega. Se difiere la captura
+     hasta que el movimiento cruza un umbral mínimo, así un toque
+     normal sobre lo que sea que haya dentro sigue funcionando y el
+     gesto de deslizar arranca igual de fluido. */
   const onDown = (e) => {
-    arrastre.current = { x: e.clientX, dx0: dx };
-    e.currentTarget.setPointerCapture?.(e.pointerId);
+    arrastre.current = { x: e.clientX, dx0: dx, id: e.pointerId, capturado: false, el: e.currentTarget };
   };
   const onMove = (e) => {
     if (!arrastre.current) return;
     const delta = e.clientX - arrastre.current.x;
+    if (!arrastre.current.capturado) {
+      if (Math.abs(delta) < UMBRAL_ARRASTRE) return;
+      arrastre.current.capturado = true;
+      arrastre.current.el.setPointerCapture?.(arrastre.current.id);
+    }
     setDx(Math.max(-MAX - 28, Math.min(0, arrastre.current.dx0 + delta)));
   };
   const soltar = () => {
@@ -271,6 +301,69 @@ function PullToRefresh({ onRefresh, children }) {
         </svg>
       </div>
       {children}
+    </div>
+  );
+}
+
+/** Dos toques guiados la primera vez que se entra, señalando dónde vive
+    el menú y dónde se arma la combinada: lo mínimo para no dejar a
+    nadie mirando la pantalla en blanco preguntándose por dónde empezar.
+    No exige tocar el elemento real —solo lo enmarca—, así que
+    funciona igual si el objetivo aún no ha terminado su animación de
+    entrada. */
+function Coachmarks({ pasos, onSalir }) {
+  const [paso, setPaso] = useState(0);
+  const [rect, setRect] = useState(null);
+  const primerBtn = useRef(null);
+
+  useEffect(() => {
+    const medir = () => {
+      const el = pasos[paso]?.ref?.current;
+      setRect(el ? el.getBoundingClientRect() : null);
+    };
+    medir();
+    window.addEventListener("resize", medir);
+    return () => window.removeEventListener("resize", medir);
+  }, [paso, pasos]);
+
+  // El foco de teclado sigue al paso: sin esto, Tab seguiría recorriendo
+  // lo que hay debajo del cristal en vez del propio aviso.
+  useEffect(() => { primerBtn.current?.focus(); }, [paso]);
+
+  if (!rect) return null;
+  const s = pasos[paso];
+  const ultimo = paso === pasos.length - 1;
+
+  const siguiente = () => (ultimo ? terminar() : setPaso((p) => p + 1));
+  const terminar = () => {
+    try { localStorage.setItem("onboarding:v1", "1"); } catch (e) { /* nada */ }
+    onSalir();
+  };
+
+  const pad = 8;
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+  const r = Math.max(rect.width, rect.height) / 2 + pad;
+  const arriba = rect.top > window.innerHeight / 2;
+  const ANCHO = 258;
+  const left = Math.min(Math.max(12, cx - ANCHO / 2), window.innerWidth - ANCHO - 12);
+
+  return (
+    <div className="coach-fondo" onClick={siguiente} role="dialog" aria-label={s.titulo}>
+      <div className="coach-hueco" style={{ left: cx - r, top: cy - r, width: r * 2, height: r * 2 }} />
+      <div className="coach-card" style={{ width: ANCHO, left,
+        ...(arriba ? { bottom: window.innerHeight - rect.top + 14 } : { top: rect.bottom + 14 }) }}
+        onClick={(e) => e.stopPropagation()}>
+        <div className="coach-step">{paso + 1} / {pasos.length}</div>
+        <div className="coach-title">{s.titulo}</div>
+        <p className="coach-text">{s.texto}</p>
+        <div className="coach-acts">
+          <button className="btn btn-ghost" onClick={terminar}>Saltar</button>
+          <button ref={primerBtn} className="btn btn-primary" onClick={siguiente}>
+            {ultimo ? "Entendido" : "Siguiente"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

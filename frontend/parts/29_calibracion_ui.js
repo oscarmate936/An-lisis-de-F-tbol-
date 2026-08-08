@@ -499,11 +499,7 @@ function Calibracion({ api, leagues, sel, setSel }) {
             </div>
           </section>
 
-          <section className="card">
-            <div className="card-head">
-              <h2 className="card-title">Rendimiento por mercado</h2>
-            </div>
-            <div className="card-body">
+          <Collapsible variant="card" title="Rendimiento por mercado" defaultOpen>
           <div className="tablewrap">
             <table className="table">
               <thead>
@@ -537,16 +533,9 @@ function Calibracion({ api, leagues, sel, setSel }) {
             bate a su tasa base, ajusta los parámetros con ese objetivo en el selector de arriba y
             guárdalos aparte.
           </p>
+          </Collapsible>
 
-            </div>
-          </section>
-
-          <section className="card">
-            <div className="card-head">
-              <h2 className="card-title">Dónde falla</h2>
-          <span className="card-note">por tipo de partido</span>
-            </div>
-            <div className="card-body">
+          <Collapsible variant="card" title="Dónde falla" note="por tipo de partido">
           <div className="tablewrap">
             <table className="table">
               <thead>
@@ -579,16 +568,9 @@ function Calibracion({ api, leagues, sel, setSel }) {
               ? `El modelo bate a las tasas base de la liga por ${((1 - res.logloss / res.baseLl) * 100).toFixed(1)}% de log-loss. Es la comparación honesta: si no la superara, no aportaría nada sobre mirar la tabla.`
               : "El modelo NO bate a las tasas base en esta temporada. Con esta liga y estos datos, sus pronósticos no son fiables: no los uses como si lo fueran."}
           </p>
+          </Collapsible>
 
-            </div>
-          </section>
-
-          <section className="card">
-            <div className="card-head">
-              <h2 className="card-title">¿Se puede creer un 70%?</h2>
-          <span className="card-note">fiabilidad</span>
-            </div>
-            <div className="card-body">
+          <Collapsible variant="card" title="¿Se puede creer un 70%?" note="fiabilidad" defaultOpen>
           <div className="reliwrap">
             <ReliabilityPlot bins={res.bins} />
             <div className="relside">
@@ -614,15 +596,9 @@ function Calibracion({ api, leagues, sel, setSel }) {
               </table>
             </div>
           </div>
+          </Collapsible>
 
-            </div>
-          </section>
-
-          <section className="card">
-            <div className="card-head">
-              <h2 className="card-title">Parámetros del modelo</h2>
-            </div>
-            <div className="card-body">
+          <Collapsible variant="card" title="Parámetros del modelo">
           <div className="parbox">
             <div className="pars">
               {[
@@ -707,16 +683,9 @@ function Calibracion({ api, leagues, sel, setSel }) {
               </p>
             )}
           </div>
+          </Collapsible>
 
-            </div>
-          </section>
-
-          <section className="card">
-            <div className="card-head">
-              <h2 className="card-title">Comprobar en otra temporada</h2>
-          <span className="card-note">validación cruzada</span>
-            </div>
-            <div className="card-body">
+          <Collapsible variant="card" title="Comprobar en otra temporada" note="validación cruzada">
           <div className="valbox">
             <div className="toolbar">
               <select className="input mono" value={valSeason || ""}
@@ -744,9 +713,7 @@ function Calibracion({ api, leagues, sel, setSel }) {
               </>
             )}
           </div>
-
-            </div>
-          </section>
+          </Collapsible>
 
           <p className="foot foot-page">
             Dos avisos honestos. Ajustar sobre la misma temporada que mides infla el resultado: si
@@ -757,12 +724,7 @@ function Calibracion({ api, leagues, sel, setSel }) {
         </>
       )}
 
-      <section className="card">
-        <div className="card-head">
-          <h2 className="card-title">Registro de pronósticos</h2>
-          <span className="card-note">medición real</span>
-        </div>
-        <div className="card-body">
+      <Collapsible variant="card" title="Registro de pronósticos" note="medición real">
       <div className="stack">
         <p className="foot" style={{ marginTop: 0 }}>
           Cada vez que abres la pestaña Mercados de un partido que aún no ha empezado, la pizarra
@@ -909,8 +871,7 @@ function Calibracion({ api, leagues, sel, setSel }) {
           </>
         )}
         </div>
-        </div>
-      </section>
+      </Collapsible>
     </div>
   );
 }
