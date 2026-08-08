@@ -41,10 +41,10 @@ function Styles() {
 html[data-tema="claro"]{
   --pitch:#F6F2FA; --surface:#FFFFFF; --turf:#F1ECF7; --turf2:#E7E0F0;
   --line:#DED8E8; --line-soft:rgba(222,216,232,.7);
-  --chalk:#1C1B22; --dim:#5C5C6E; --faint:#7C7C8E;
+  --chalk:#1C1B22; --dim:#5C5C6E; --faint:#686878;
   --mark:#5B3FE0; --mark-soft:rgba(91,63,224,.10); --mark-ink:#FFFFFF;
   --sodium:#8A5A00; --sodium-soft:rgba(138,90,0,.10);
-  --cool:#0B6D93; --red:#BA1B1B; --win:#1D7A4C; --yellow:#8A6D00;
+  --cool:#0B6D93; --red:#BA1B1B; --win:#1D7A4C; --yellow:#7A6100;
   --sh:0 1px 2px rgba(28,27,34,.08), 0 2px 8px -4px rgba(28,27,34,.12);
   --sh2:0 2px 6px rgba(28,27,34,.1), 0 10px 26px -12px rgba(28,27,34,.22);
 }

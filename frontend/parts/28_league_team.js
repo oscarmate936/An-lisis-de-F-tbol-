@@ -131,6 +131,13 @@ function League({ api, leagues, sel, setSel, onTeam }) {
       {err && <div className="alert">{err}</div>}
       {busy && <Spinner />}
 
+      {sel.league && !busy && !err && standings?.length === 0 && (
+        <Empty
+          title="Sin clasificación todavía"
+          hint="Puede que la temporada aún no haya empezado, o que este plan de API-Football no incluya este dato para esta competición."
+        />
+      )}
+
       {standings?.map((group, gi) => (
         <section key={gi}>
           <Rule label={standings.length > 1 ? group[0]?.group || `Grupo ${gi + 1}` : "Clasificación"} />
