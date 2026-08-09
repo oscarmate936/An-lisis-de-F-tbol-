@@ -1,4 +1,4 @@
-package com.pizarra.terminal;
+package com.acierto.terminal;
 
 import com.getcapacitor.BridgeActivity;
 

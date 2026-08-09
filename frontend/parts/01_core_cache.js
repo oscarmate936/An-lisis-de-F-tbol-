@@ -25,7 +25,7 @@ function recientesGuardar(termino) {
 }
 
 /* ============================================================
-   PIZARRA — Terminal de análisis de partidos
+   ACIERTO — Terminal de análisis de partidos
    Fuente de datos: API-Football (API-Sports v3)
    ============================================================ */
 
@@ -40,7 +40,7 @@ const CACHE_KEY = "cache:v3";
 let idb = null;
 const idbListo = new Promise((resolve) => {
   try {
-    const req = indexedDB.open("pizarra", 1);
+    const req = indexedDB.open("acierto", 1);
     req.onupgradeneeded = () => {
       const db = req.result;
       if (!db.objectStoreNames.contains("cache")) db.createObjectStore("cache");

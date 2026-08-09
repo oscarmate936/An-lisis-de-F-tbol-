@@ -124,25 +124,34 @@ function Mercados({ api, fixture, onBoleto }) {
             ds = leagueDataset(fx);
           } catch (e) { continue; }
           if (ds.length < 60) continue;
-          const r = await fitParams(ds, P0, () => {}, { motor: "mle", objetivo: "x1x2", ajustarNu: true });
+          // Se prueban los cuatro motores (lo mismo que "Comparar motores"
+          // en Calibración, pero solo) y se guarda el que menos log-loss
+          // dé en esta competición concreta: no todas las ligas se
+          // comportan igual de bien con el mismo motor.
+          let r = null;
+          for (const motor of MOTOR_CANDIDATOS) {
+            try {
+              const r2 = await fitParams(ds, P0, () => {}, { motor, objetivo: "x1x2", ajustarNu: true });
+              if (!r || r2.logloss < r.logloss) r = r2;
+            } catch (e) { /* este motor no da para bastantes predicciones con esta liga */ }
+          }
+          if (!r) continue;
           if (dead) return;
           // Con bastante historial, además de las fuerzas se puede afinar
           // el 1X2 resultado a resultado (el empate suele quedar mal
           // calibrado aunque local y visitante estén bien). Solo se guarda
-          // si de verdad mejora sobre el número crudo del modelo.
+          // si de verdad mejora sobre el número crudo del motor elegido.
           let vector = null;
           try {
-            const preds = runPredictionsMLE(ds, r.params);
-            if (preds.length >= 400) {
-              const sc = scorePredictions(preds, r.params.rho,
-                { corr: r.params.corr, theta: r.params.theta, nu: r.params.nu });
-              const vec = sc && fitVectorScaling(sc.probs, sc.ys);
+            const sc = await scoreConMotor(ds, r.params, r.motor);
+            if (sc && sc.probs.length >= 400) {
+              const vec = fitVectorScaling(sc.probs, sc.ys);
               if (vec && vec.ll < sc.logloss - 0.002) vector = { a: vec.a, b: vec.b };
             }
           } catch (e) { /* sin recalibración por resultado: se sigue solo con los parámetros */ }
           const payload = {
             params: { ...r.params, vector }, league: lgId, season: yr, objetivo: "x1x2",
-            motor: "mle", n: ds.length, ts: Date.now(), auto: true,
+            motor: r.motor, n: ds.length, ts: Date.now(), auto: true,
           };
           await storage.set(paramsKey(lgId), JSON.stringify(payload));
           if (!dead) { setParams(payload.params); setParamsInfo(payload); }
@@ -1311,7 +1320,7 @@ function Mercados({ api, fixture, onBoleto }) {
           )}
           {paramsInfo ? (
             <span className="chip chip-on"
-              title={`Ajustados ${paramsInfo.auto ? "solos" : "a mano"} con la temporada ${paramsInfo.season} sobre ${paramsInfo.n} partidos`}>
+              title={`Ajustados ${paramsInfo.auto ? "solos" : "a mano"} con la temporada ${paramsInfo.season} sobre ${paramsInfo.n} partidos${paramsInfo.auto ? ` · motor elegido: ${MOTORES[paramsInfo.motor] || paramsInfo.motor}` : ""}`}>
               {paramsInfo.auto ? "Parámetros autoajustados" : "Parámetros calibrados"}
             </span>
           ) : autoCalBusy ? (
@@ -1420,7 +1429,7 @@ function Mercados({ api, fixture, onBoleto }) {
                 <p className="foot">
                   Mezclar con el mercado casi siempre mejora la precisión, porque las casas ven
                   alineaciones y noticias. Pero entonces dejas de tener una opinión propia: si lo
-                  subes mucho, la pizarra solo te devuelve lo que ya dice la cuota.
+                  subes mucho, la app solo te devuelve lo que ya dice la cuota.
                 </p>
               </div>
             )}
@@ -2212,7 +2221,7 @@ function Mercados({ api, fixture, onBoleto }) {
             <p className="foot">
               Las mitades se modelan como dos partidos independientes que reparten el 45% y el 55%
               de los goles esperados. Es una aproximación razonable, pero ignora el efecto del
-              marcador: son los mercados menos fiables de la pizarra.
+              marcador: son los mercados menos fiables de la app.
             </p>
           </>
         )}

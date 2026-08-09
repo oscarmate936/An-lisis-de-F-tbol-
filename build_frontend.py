@@ -1,4 +1,4 @@
-"""Ensambla la interfaz de Pizarra a partir de sus módulos en frontend/.
+"""Ensambla la interfaz de Acierto a partir de sus módulos en frontend/.
 
 La interfaz es una SPA de React que corre entera en el navegador (habla
 directo con API-Football, no necesita backend). Streamlit solo la aloja.

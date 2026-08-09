@@ -37,7 +37,7 @@ function fitOrdinal(rows, { iters = 400, lr = 0.12, l2 = 0.02 } = {}) {
   }
   const th2 = th1 + Math.exp(dlt);
   // Si el descenso se ha ido a infinito, más vale no tener modelo que
-  // tener uno que reparte NaN por toda la pizarra.
+  // tener uno que reparte NaN por toda la app.
   if (![...beta, th1, th2].every((v) => typeof v === "number" && isFinite(v))) return null;
   return {
     beta, th1, th2,

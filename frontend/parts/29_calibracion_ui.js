@@ -2,19 +2,19 @@
    App
    ============================================================ */
 /* Red de seguridad: si un panel falla, cae solo ese panel y se puede
-   seguir usando la pizarra. Antes, cualquier error dejaba la página en
+   seguir usando la app. Antes, cualquier error dejaba la página en
    negro sin decir nada. */
 class ErrorBoundary extends React.Component {
   constructor(p) { super(p); this.state = { err: null }; }
   static getDerivedStateFromError(err) { return { err }; }
-  componentDidCatch(err, info) { console.error("Fallo en la pizarra:", err, info); }
+  componentDidCatch(err, info) { console.error("Fallo en la app:", err, info); }
   render() {
     if (!this.state.err) return this.props.children;
     return (
       <div className="crash">
         <div className="crash-tag">Algo se rompió aquí</div>
         <p>
-          Esta parte de la pizarra ha fallado, pero el resto sigue funcionando. Suele pasar cuando
+          Esta parte de la app ha fallado, pero el resto sigue funcionando. Suele pasar cuando
           una competición no publica algún dato que el panel esperaba.
         </p>
         <code className="mono crash-msg">{String(this.state.err?.message || this.state.err)}</code>
@@ -343,7 +343,7 @@ function Calibracion({ api, leagues, sel, setSel }) {
       {!list && !busy && (
         <div className="stage">
           <p>
-            Elige una competición y una temporada ya jugada. La pizarra vuelve a predecir cada
+            Elige una competición y una temporada ya jugada. La app vuelve a predecir cada
             jornada usando solo lo que se sabía antes de cada partido y compara con lo que pasó de
             verdad. Cuesta una sola llamada a la API por temporada.
           </p>
@@ -672,7 +672,7 @@ function Calibracion({ api, leagues, sel, setSel }) {
               <div className="advice">
                 <span className="advice-tag">Ajustado</span>
                 <span>
-                  Log-loss {f3(fit.logloss)} con los parámetros de arriba. La pizarra los usará en
+                  Log-loss {f3(fit.logloss)} con los parámetros de arriba. La app los usará en
                   todos los partidos de esta competición si los guardas.
                 </span>
               </div>
@@ -680,7 +680,7 @@ function Calibracion({ api, leagues, sel, setSel }) {
             {savedFor && (
               <p className="foot">
                 {savedFor.auto
-                  ? "Ajustados solos por la pizarra"
+                  ? "Ajustados solos por la app"
                   : "Guardados a mano"} el {new Date(savedFor.ts).toLocaleDateString()} para{" "}
                 <b>{OBJETIVOS[savedFor.objetivo || "x1x2"]?.label || "el 1X2"}</b> con la temporada{" "}
                 <span className="mono">{savedFor.season}</span> ({savedFor.n} partidos). Mercados
@@ -725,7 +725,7 @@ function Calibracion({ api, leagues, sel, setSel }) {
           <p className="foot foot-page">
             Dos avisos honestos. Ajustar sobre la misma temporada que mides infla el resultado: si
             quieres una medición limpia, calibra con una temporada y comprueba con otra distinta.
-            Y el backtest usa solo partidos de esta competición, mientras que la pizarra también
+            Y el backtest usa solo partidos de esta competición, mientras que la app también
             mira la forma en copas, así que los números de aquí son una cota prudente.
           </p>
         </>
@@ -734,7 +734,7 @@ function Calibracion({ api, leagues, sel, setSel }) {
       <Collapsible variant="card" title="Registro de pronósticos" note="medición real">
       <div className="stack">
         <p className="foot" style={{ marginTop: 0 }}>
-          Cada vez que abres la pestaña Mercados de un partido que aún no ha empezado, la pizarra
+          Cada vez que abres la pestaña Mercados de un partido que aún no ha empezado, la app
           guarda aquí lo que predijo. Nada de esto se puede retocar después, así que es la única
           medición que no admite trampa. Pulsa el botón cuando hayan pasado unas jornadas.
         </p>
@@ -747,15 +747,15 @@ function Calibracion({ api, leagues, sel, setSel }) {
               <button className="btn btn-quiet" onClick={puntuarConteos} disabled={regBusy}>
                 Puntuar córners y tarjetas
               </button>
-              <button className="btn btn-quiet" onClick={() => downloadText("registro-pizarra.xls",
+              <button className="btn btn-quiet" onClick={() => downloadText("registro-acierto.xls",
                 toExcel([{ nombre: "Registro", cols: [["Fecha", (r) => r.date], ["Local", (r) => r.home],
                   ["Visitante", (r) => r.away], ["P local", (r) => r.pH], ["P empate", (r) => r.pD],
                   ["P visita", (r) => r.pA], ["P +2.5", (r) => r.pO], ["P ambos", (r) => r.pB],
                   ["Goles local", (r) => r.gh ?? ""], ["Goles visita", (r) => r.ga ?? ""]],
                   filas: reg }]), "application/vnd.ms-excel")}>Exportar Excel</button>
-              <button className="btn btn-quiet" onClick={() => downloadText("registro-pizarra.json",
+              <button className="btn btn-quiet" onClick={() => downloadText("registro-acierto.json",
                 JSON.stringify(reg, null, 2), "application/json")}>Exportar JSON</button>
-              <button className="btn btn-quiet" onClick={() => downloadText("registro-pizarra.csv",
+              <button className="btn btn-quiet" onClick={() => downloadText("registro-acierto.csv",
                 toCSV(reg, [["fecha", (r) => r.date], ["local", (r) => r.home], ["visitante", (r) => r.away],
                   ["gol_esp_local", (r) => r.lh], ["gol_esp_visita", (r) => r.la],
                   ["p_local", (r) => r.pH], ["p_empate", (r) => r.pD], ["p_visita", (r) => r.pA],
@@ -864,7 +864,7 @@ function Calibracion({ api, leagues, sel, setSel }) {
               <div className="reliwrap">
                 <ReliabilityPlot bins={regScore.bins} />
                 <p className="foot" style={{ marginTop: 0 }}>
-                  Esto es lo que la pizarra ha acertado de verdad, sobre partidos que no había
+                  Esto es lo que la app ha acertado de verdad, sobre partidos que no había
                   visto cuando los predijo. Es el número que importa: todo lo demás de esta
                   pantalla es un ensayo. Con menos de cien partidos, tómalo como señal provisional.
                 </p>

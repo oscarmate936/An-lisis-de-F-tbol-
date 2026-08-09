@@ -1,8 +1,8 @@
 {
-  "name": "pizarra-app",
+  "name": "acierto-app",
   "version": "1.0.0",
   "private": true,
-  "description": "Pizarra — terminal de análisis, empaquetada como app de Android con Capacitor.",
+  "description": "Acierto — terminal de análisis, empaquetada como app de Android con Capacitor.",
   "scripts": {
     "build:www": "python3 build_www.py",
     "sync": "npm run build:www && npx cap sync android",

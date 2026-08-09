@@ -41,4 +41,5 @@ const MOTORES = {
   elo: "Elo + ordinal",
   ens: "Ensamble apilado",
 };
+const MOTOR_CANDIDATOS = Object.keys(MOTORES);
 

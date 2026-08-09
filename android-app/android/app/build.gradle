@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace "com.pizarra.terminal"
+    namespace "com.acierto.terminal"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.pizarra.terminal"
+        applicationId "com.acierto.terminal"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

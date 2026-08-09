@@ -1,4 +1,4 @@
-"""Ensambla la SPA de Pizarra para empaquetarla como app de Android.
+"""Ensambla la SPA de Acierto para empaquetarla como app de Android.
 
 Usa exactamente el mismo código de frontend/parts/ que la versión de
 Streamlit (build_frontend.py, en la raíz del repo) — ni una línea de

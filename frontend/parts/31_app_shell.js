@@ -189,7 +189,7 @@ function Drawer({ onClose, account, tema, cambiarTema, onAyuda, onAjustes, onLig
         <div className="drawer-head">
           <span className="brand-mark" aria-hidden="true" />
           <span className="brand-txt">
-            <span className="brand-word">Pizarra</span>
+            <span className="brand-word">Acierto</span>
             <span className="drawer-email">{account?.account?.email || ""}</span>
           </span>
         </div>
@@ -254,7 +254,7 @@ function Ajustes({ onClose, account, meta, tema, temaAplicado, setTema, aspecto,
     try {
       const j = await respaldoExportar();
       const dia = new Date().toISOString().slice(0, 10);
-      downloadText(`pizarra-copia-${dia}.json`, JSON.stringify(j, null, 1));
+      downloadText(`acierto-copia-${dia}.json`, JSON.stringify(j, null, 1));
       setMsg("Copia descargada. Guárdala donde no dependa de este navegador.");
       avisar("Copia de seguridad descargada");
     } catch (e) { setErr("No he podido preparar la copia: " + e.message); }
@@ -669,6 +669,28 @@ function App() {
             await storage.set(LOG_KEY, JSON.stringify(merged));
           }
         }
+        // Córners y tarjetas reales de los partidos ya puntuados: igual
+        // que el botón "Puntuar córners y tarjetas" de Calibración, pero
+        // solo, y con el mismo tope de 12 por pasada para no disparar la
+        // cuota.
+        if (dead) return;
+        const conGoles = await logRead();
+        const faltanConteos = conGoles.filter((e) => e.gh !== undefined && e.gh !== null &&
+          (e.pC !== undefined || e.pT !== undefined) && e.cAct === undefined).slice(0, 12);
+        if (faltanConteos.length) {
+          const conConteos = [...conGoles];
+          for (const e of faltanConteos) {
+            if (dead) return;
+            const st = await api("fixtures/statistics", { fixture: e.fx }, TTL.static).catch(() => null);
+            if (!st?.length) continue;
+            const suma = (k, mult = 1) => st.reduce((a, b) =>
+              a + num((b.statistics || []).find((x) => x.type === k)?.value) * mult, 0);
+            const i = conConteos.findIndex((x) => x.fx === e.fx);
+            if (i >= 0) conConteos[i] = { ...conConteos[i], cAct: suma("Corner Kicks"),
+              tAct: suma("Yellow Cards") + suma("Red Cards", 2) };
+          }
+          await storage.set(LOG_KEY, JSON.stringify(conConteos));
+        }
         try { localStorage.setItem(REFRESH_KEY, String(Date.now())); } catch (e) { /* sin espacio */ }
         if (dead) return;
         const fresh = await logRead();
@@ -887,7 +909,7 @@ function App() {
             <div className="brand">
               <span className="brand-mark" aria-hidden="true" />
               <span className="brand-txt">
-                <span className="brand-word">Pizarra</span>
+                <span className="brand-word">Acierto</span>
                 <span className="brand-sub">terminal de análisis</span>
               </span>
             </div>

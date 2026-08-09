@@ -1,6 +1,6 @@
 {
-  "appId": "com.pizarra.terminal",
-  "appName": "Pizarra",
+  "appId": "com.acierto.terminal",
+  "appName": "Acierto",
   "webDir": "www",
   "backgroundColor": "#0F1116",
   "android": {

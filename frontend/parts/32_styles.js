@@ -37,7 +37,7 @@ function Styles() {
   --ctxh:0px;
   --phone:428px;
 }
-/* Tema claro: la misma pizarra, en Material Light. */
+/* Tema claro: la misma app, en Material Light. */
 html[data-tema="claro"]{
   --pitch:#F6F2FA; --surface:#FFFFFF; --turf:#F1ECF7; --turf2:#E7E0F0;
   --line:#DED8E8; --line-soft:rgba(222,216,232,.7);
@@ -1470,7 +1470,7 @@ html[data-densidad="comoda"] .betval,html[data-densidad="comoda"] .ldside{paddin
 
 /* ===============================================================
    ANDROID SHELL — rediseño Material 3
-   La pizarra deja de comportarse como un panel de escritorio que se
+   La app deja de comportarse como un panel de escritorio que se
    encoge en el móvil: pasa a ser, siempre, una app de Android. Barra
    inferior fija con indicador de píldora, hojas que suben desde
    abajo en vez de diálogos centrados, botones de píldora, listas de

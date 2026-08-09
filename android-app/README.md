@@ -1,6 +1,6 @@
-# Pizarra — app de Android
+# Acierto — app de Android
 
-La misma Pizarra de siempre (mismo diseño Material 3/Android, mismos
+La misma app de siempre (mismo diseño Material 3/Android, mismos
 menús, mismo motor de modelos, mismas mejoras de esta temporada de
 trabajo) empaquetada como una app de Android de verdad, instalable
 como `.apk`, en vez de vivir dentro de un componente de Streamlit.
@@ -60,7 +60,7 @@ desarrollo aislado no siempre tiene) y dos cosas:
 
 Para bajarlo: en GitHub, pestaña **Actions** → el run más reciente de
 "Compilar APK de Android" → sección **Artifacts**, al final de la
-página → `pizarra-debug-apk`. Es un `.zip` que contiene `app-debug.apk`.
+página → `acierto-debug-apk`. Es un `.zip` que contiene `app-debug.apk`.
 
 Este es un APK de **depuración** (`assembleDebug`), firmado con una
 clave de pruebas genérica: sirve para instalarlo y probarlo tal cual,
@@ -109,7 +109,7 @@ propia, que no se puede generar sin que decidas tú la clave (es tuya,
 no se puede improvisar por ti). Los pasos, cuando quieras dar ese
 paso:
 
-1. Generar una clave: `keytool -genkey -v -keystore pizarra.keystore -alias pizarra -keyalg RSA -keysize 2048 -validity 10000`.
+1. Generar una clave: `keytool -genkey -v -keystore acierto.keystore -alias acierto -keyalg RSA -keysize 2048 -validity 10000`.
 2. Configurar la firma en `android/app/build.gradle` (`signingConfigs`).
 3. `./gradlew bundleRelease` en vez de `assembleDebug`.
 4. Subir el `.aab` resultante a la Play Console.

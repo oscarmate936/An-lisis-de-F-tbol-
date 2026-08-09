@@ -1,7 +1,7 @@
 {
-  "name": "Pizarra — terminal de análisis",
-  "short_name": "Pizarra",
-  "description": "Terminal de análisis de fútbol sobre datos de API-Football: mercados, cuotas y modelos estadísticos.",
+  "name": "Acierto — terminal de análisis",
+  "short_name": "Acierto",
+  "description": "Terminal de análisis de fútbol sobre datos de API-Football: mercados, cuotas y modelos estadísticos que se calibran solos.",
   "start_url": "/",
   "id": "/",
   "display": "standalone",

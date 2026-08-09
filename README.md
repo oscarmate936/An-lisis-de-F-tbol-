@@ -1,4 +1,4 @@
-# Pizarra — terminal de análisis de partidos
+# Acierto — terminal de análisis de partidos
 
 Terminal de análisis de fútbol sobre datos de [API-Football](https://www.api-football.com/)
 (API-Sports v3): fixtures en vivo, mercados y cuotas, alineaciones, un
@@ -25,6 +25,13 @@ La interfaz sigue el lenguaje visual y de interacción de Material 3
 
 Y de comportamiento, no solo de estilo:
 
+- **Calibración automática**: cada competición ajusta sola sus
+  parámetros (fuerzas, forma, motor, y un afinado fino del empate) la
+  primera vez que hace falta, sin pedir peticiones nuevas a la API.
+  Una vigilancia diaria revisa el registro de pronósticos —lo único
+  que no admite trampa, porque queda escrito antes del partido— y si
+  una liga se desvía de su tasa base, se recalibra sola. Lo calibrado
+  a mano nunca se toca sin que lo pida quien lo guardó.
 - **Tema automático**: además de Claro/Oscuro, "Auto" sigue el tema
   del sistema operativo y se actualiza solo si el aparato cambia de
   tema mientras la app está abierta.

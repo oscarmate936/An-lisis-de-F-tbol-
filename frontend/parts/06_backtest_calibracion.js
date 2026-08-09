@@ -189,6 +189,22 @@ function scorePredictions(preds, rho, opts = {}) {
   return scoreFromProbs(items);
 }
 
+/** Corre el motor indicado sobre una lista de partidos y devuelve su
+    puntuación completa (incluye probs/ys, que hacen falta para ajustar
+    el escalado vectorial). Mismo criterio que usa Calibración para
+    comparar los cuatro motores, pero reutilizable fuera de esa pantalla. */
+async function scoreConMotor(ds, P, motor, useRest = true) {
+  if (motor === "ens" || motor === "elo") {
+    const rows = (await runEnsemble(ds, P)).filter((r) => r.pOrd);
+    if (rows.length < 30) return null;
+    const key = motor === "ens" ? "pEns" : "pOrd";
+    return scoreFromProbs(rows.map((r) => ({ ...r, ps: r[key] })));
+  }
+  const preds = motor === "mle" ? runPredictionsMLE(ds, P) : runPredictions(ds, P, useRest);
+  if (preds.length < 30) return null;
+  return scorePredictions(preds, P.rho, { corr: P.corr, theta: P.theta, nu: P.nu });
+}
+
 const RHOS = [-0.22, -0.19, -0.16, -0.13, -0.1, -0.07, -0.04, 0];
 const GRID_FIT = {
   wForm: [0, 0.15, 0.3, 0.4, 0.55, 0.7, 0.85, 1],

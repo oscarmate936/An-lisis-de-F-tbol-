@@ -1,4 +1,4 @@
-"""Punto de entrada de Streamlit para Pizarra — terminal de análisis.
+"""Punto de entrada de Streamlit para Acierto — terminal de análisis.
 
 La app es una SPA de React/Babel que se conecta directamente a
 API-Football desde el navegador (la clave se guarda en el propio
@@ -11,7 +11,7 @@ import streamlit.components.v1 as components
 from build_frontend import build_html
 
 st.set_page_config(
-    page_title="Pizarra — terminal de análisis",
+    page_title="Acierto — terminal de análisis",
     page_icon="⚽",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -62,7 +62,7 @@ st.markdown(
     <link rel="apple-touch-icon" href="app/static/icon-192.png">
     <meta name="theme-color" content="#0F1116">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-title" content="Pizarra">
+    <meta name="apple-mobile-web-app-title" content="Acierto">
     """,
     unsafe_allow_html=True,
 )

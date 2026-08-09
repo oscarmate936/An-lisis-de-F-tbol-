@@ -199,12 +199,14 @@ async function respaldoExportar() {
       if (v) aspecto[k] = v;
     });
   } catch (e) { /* nada */ }
-  return { app: "pizarra", version: 18, fecha: new Date().toISOString(), boletos: b, picks, ajustes, aspecto };
+  return { app: "acierto", version: 18, fecha: new Date().toISOString(), boletos: b, picks, ajustes, aspecto };
 }
 
 async function respaldoImportar(json) {
-  if (!json || json.app !== "pizarra" || !json.boletos)
-    throw new Error("Ese archivo no es una copia de Pizarra.");
+  // "pizarra" es el nombre anterior de la app: las copias exportadas antes
+  // del cambio de nombre se siguen pudiendo restaurar.
+  if (!json || (json.app !== "acierto" && json.app !== "pizarra") || !json.boletos)
+    throw new Error("Ese archivo no es una copia de Acierto.");
   const lista = json.boletos.lista;
   if (!Array.isArray(lista) || !lista.length)
     throw new Error("La copia no contiene ningún boleto.");
@@ -229,7 +231,7 @@ async function respaldoImportar(json) {
    no se enteraba de lo que marcabas en la otra. */
 let canal = null;
 try {
-  canal = new BroadcastChannel("pizarra");
+  canal = new BroadcastChannel("acierto");
   canal.onmessage = async (e) => {
     const tipo = e && e.data && e.data.tipo;
     if (!tipo) return;

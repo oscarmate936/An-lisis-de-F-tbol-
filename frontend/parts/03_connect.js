@@ -18,7 +18,7 @@ function Connect({ onConnect, busy, error, initialKey }) {
   return (
     <div className="gate">
       <div className="gate-mark">
-        <span className="gate-word">PIZARRA</span>
+        <span className="gate-word">ACIERTO</span>
         <span className="gate-sub">terminal de análisis · API-Football v3</span>
       </div>
 
