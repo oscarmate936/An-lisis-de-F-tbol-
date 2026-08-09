@@ -633,6 +633,61 @@ function App() {
     return () => clearTimeout(t);
   }, [account]);
 
+  /* Vigilancia de degradación: como mucho una vez al día, se ponen al
+     día con resultados reales los pronósticos pendientes del registro
+     prospectivo (lo único que no se puede trampear, porque queda escrito
+     antes del partido) y se mira si alguna liga se ha desviado de su
+     tasa base. Las que estén autoajustadas se marcan caducadas para que
+     Mercados las recalibre solas la próxima vez; lo calibrado a mano no
+     se toca nunca por aquí. */
+  useEffect(() => {
+    if (!account) return;
+    let dead = false;
+    (async () => {
+      try {
+        const REFRESH_KEY = "registro-refresh-ts";
+        let last = 0;
+        try { last = Number(localStorage.getItem(REFRESH_KEY)) || 0; } catch (e) { /* nada */ }
+        if (Date.now() - last < 20 * 3600e3) return;
+        const all = await logRead();
+        const pend = all.filter((e) => e.gh === undefined || e.gh === null);
+        if (pend.length) {
+          const ids = pend.map((e) => e.fx);
+          const nuevos = new Map();
+          for (let i = 0; i < ids.length; i += 20) {
+            if (dead) return;
+            const trozo = ids.slice(i, i + 20);
+            const r = await api("fixtures", { ids: trozo.join("-") }, TTL.short).catch(() => null);
+            (r || []).forEach((f) => {
+              if (DONE_STATES.includes(f.fixture?.status?.short))
+                nuevos.set(f.fixture.id, { gh: num(f.goals.home), ga: num(f.goals.away) });
+            });
+          }
+          if (dead) return;
+          if (nuevos.size) {
+            const merged = all.map((e) => (nuevos.has(e.fx) ? { ...e, ...nuevos.get(e.fx) } : e));
+            await storage.set(LOG_KEY, JSON.stringify(merged));
+          }
+        }
+        try { localStorage.setItem(REFRESH_KEY, String(Date.now())); } catch (e) { /* sin espacio */ }
+        if (dead) return;
+        const fresh = await logRead();
+        const degr = logDegradados(fresh);
+        try { localStorage.setItem("registro:degradados:v1", JSON.stringify(degr)); } catch (e) { /* sin espacio */ }
+        for (const d of degr) {
+          try {
+            const r = await storage.get(paramsKey(d.lg));
+            if (!r?.value) continue;
+            const saved = JSON.parse(r.value);
+            if (saved.auto === false) continue;
+            await storage.delete(paramsKey(d.lg));
+          } catch (e) { /* nada guardado para esta liga */ }
+        }
+      } catch (e) { /* sin red: se prueba otro día */ }
+    })();
+    return () => { dead = true; };
+  }, [account, api]);
+
   async function connect(k, silent = false) {
     setGateBusy(true);
     setGateErr(null);

@@ -55,6 +55,16 @@ function Mercados({ api, fixture, onBoleto }) {
   const [paramsListo, setParamsListo] = useState(false);
   const [autoCalBusy, setAutoCalBusy] = useState(false);
   const autoCalIntento = useRef(null);
+  const [degradado, setDegradado] = useState(null);
+
+  // Si la vigilancia en segundo plano vio que esta liga se ha desviado
+  // de su tasa base en el registro prospectivo, se avisa aquí mismo.
+  useEffect(() => {
+    try {
+      const j = JSON.parse(localStorage.getItem("registro:degradados:v1") || "[]");
+      setDegradado((Array.isArray(j) ? j : []).find((d) => d.lg === lgId) || null);
+    } catch (e) { setDegradado(null); }
+  }, [lgId]);
   const [odds, setOdds] = useState(null);
   const [oddsBusy, setOddsBusy] = useState(false);
   const [oddsErr, setOddsErr] = useState(null);
@@ -116,8 +126,22 @@ function Mercados({ api, fixture, onBoleto }) {
           if (ds.length < 60) continue;
           const r = await fitParams(ds, P0, () => {}, { motor: "mle", objetivo: "x1x2", ajustarNu: true });
           if (dead) return;
+          // Con bastante historial, además de las fuerzas se puede afinar
+          // el 1X2 resultado a resultado (el empate suele quedar mal
+          // calibrado aunque local y visitante estén bien). Solo se guarda
+          // si de verdad mejora sobre el número crudo del modelo.
+          let vector = null;
+          try {
+            const preds = runPredictionsMLE(ds, r.params);
+            if (preds.length >= 400) {
+              const sc = scorePredictions(preds, r.params.rho,
+                { corr: r.params.corr, theta: r.params.theta, nu: r.params.nu });
+              const vec = sc && fitVectorScaling(sc.probs, sc.ys);
+              if (vec && vec.ll < sc.logloss - 0.002) vector = { a: vec.a, b: vec.b };
+            }
+          } catch (e) { /* sin recalibración por resultado: se sigue solo con los parámetros */ }
           const payload = {
-            params: r.params, league: lgId, season: yr, objetivo: "x1x2",
+            params: { ...r.params, vector }, league: lgId, season: yr, objetivo: "x1x2",
             motor: "mle", n: ds.length, ts: Date.now(), auto: true,
           };
           await storage.set(paramsKey(lgId), JSON.stringify(payload));
@@ -230,6 +254,7 @@ function Mercados({ api, fixture, onBoleto }) {
     const P = base.params || P0;
     const rho = P.rho ?? -0.13;
     const opts = { rho, corr: P.corr, theta: P.theta, nu: P.nu };
+    const vector = P.vector || null;
     // Si el ensamble está disponible y activado, se buscan los goles
     // esperados que reproducen su 1X2: así manda sobre TODOS los mercados,
     // no solo sobre el resultado.
@@ -295,13 +320,13 @@ function Mercados({ api, fixture, onBoleto }) {
       m: buildMatrix(aH, aA, { ...opts, n: GRID }),
       m1: buildMatrix(aH * sh, aA * sh, hOpts),
       m2: buildMatrix(aH * (1 - sh), aA * (1 - sh), hOpts),
-      lh: aH, la: aA, opts,
+      lh: aH, la: aA, opts, vector,
       homeName: home.name, awayName: away.name,
     }).map((x) => [x.key, x.p]));
     return {
       lh, la, m, m1, m2, usaXg, usaEns, usaMkt, live, half, ref,
-      dist,
-      markets: buildMarkets({ m, m1, m2, lh, la, opts, dist,
+      dist, vector,
+      markets: buildMarkets({ m, m1, m2, lh, la, opts, dist, vector,
         homeName: home.name, awayName: away.name }),
     };
   }, [base, adj.h, adj.a, adj.xg, adj.ens, adj.mkt, adj.api, ens, odds, counts,
@@ -899,7 +924,13 @@ function Mercados({ api, fixture, onBoleto }) {
     if (!model || isLive || DONE_STATES.includes(fixture.fixture.status?.short)) return;
     if (new Date(fixture.fixture.date).getTime() < Date.now()) return;
     const m = model.m;
-    const pH = sumWhere(m, (x, y) => x > y), pD = sumWhere(m, (x, y) => x === y);
+    let pH = sumWhere(m, (x, y) => x > y), pD = sumWhere(m, (x, y) => x === y);
+    // Se registra lo que de verdad se enseñó (con recalibración por
+    // resultado si la hay), no el número crudo de la matriz: es lo único
+    // que no admite trampa, así que tiene que ser honesto con lo mostrado.
+    if (model.vector) {
+      [pH, pD] = applyVectorScaling([pH, pD, 1 - pH - pD], model.vector);
+    }
     logSave({
       fx: fixture.fixture.id, lg: lgId, season, date: fixture.fixture.date,
       home: home.name, away: away.name,
@@ -1289,6 +1320,18 @@ function Mercados({ api, fixture, onBoleto }) {
             </span>
           ) : (
             <span className="chip" title="Puedes ajustarlos en la pestaña Calibración">Parámetros por defecto</span>
+          )}
+          {model.vector && (
+            <span className="chip chip-on"
+              title="El 1X2 lleva un ajuste fino por resultado (sobre todo el empate), medido en el backtest de esta competición">
+              Empate recalibrado
+            </span>
+          )}
+          {degradado && (
+            <span className="chip chip-warn"
+              title={`En los últimos ${degradado.n} pronósticos de esta liga que ya se pudieron comprobar, el log-loss real (${degradado.logloss.toFixed(3)}) queda peor que la tasa base (${degradado.baseLl.toFixed(3)}). ${paramsInfo?.auto === false ? "Puedes revisar la calibración a mano en la pestaña Calibración." : "Se recalibrará sola la próxima vez que se abra esta liga."}`}>
+              Se está desviando
+            </span>
           )}
         </div>
         <div className="mk-acts">

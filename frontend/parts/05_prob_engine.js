@@ -554,9 +554,17 @@ function buildMarkets(ctx) {
       key: `${fam}|${mercado}|${sel}`,
     });
 
-  const pH = sumWhere(m, (x, y) => x > y);
-  const pD = sumWhere(m, (x, y) => x === y);
-  const pA = sumWhere(m, (x, y) => x < y);
+  let pH = sumWhere(m, (x, y) => x > y);
+  let pD = sumWhere(m, (x, y) => x === y);
+  let pA = sumWhere(m, (x, y) => x < y);
+  // Recalibración por resultado: aprendida en el backtest de esta
+  // competición, solo se guarda si de verdad mejora el log-loss del 1X2
+  // crudo. Solo toca el marcador 1X2 y lo que sale de él (doble
+  // oportunidad, empate anula): el resto de mercados sigue con la matriz
+  // sin retocar, que es de donde salen de verdad.
+  if (ctx.vector) {
+    [pH, pD, pA] = applyVectorScaling([pH, pD, pA], ctx.vector);
+  }
 
   /* --- Resultado --- */
   add("Resultado", "1X2", homeName, pH, { pred: (x, y) => x > y, concepto: "local", core: 1 });

@@ -294,7 +294,11 @@ function Calibracion({ api, leagues, sel, setSel }) {
   }
 
   async function guardar() {
-    const payload = { params: P, league: sel.league, season: sel.season, objetivo, motor,
+    // El escalado vectorial solo se midió sobre el 1X2 (local/empate/
+    // visitante): en otros objetivos no significa nada y no se guarda.
+    const vector = objetivo === "x1x2" && res?.vector && res.vector.ll < res.logloss - 0.002
+      ? { a: res.vector.a, b: res.vector.b } : null;
+    const payload = { params: { ...P, vector }, league: sel.league, season: sel.season, objetivo, motor,
       n: res?.n || 0, ts: Date.now(), auto: false };
     try {
       await storage.set(paramsKey(sel.league, objetivo), JSON.stringify(payload));

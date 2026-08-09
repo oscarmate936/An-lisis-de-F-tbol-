@@ -423,6 +423,7 @@ html[data-tema="claro"] .day-on .day-dow{color:rgba(255,255,255,.75)}
 .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
 .chip{border:1px solid var(--line);padding:4px 9px;border-radius:99px;font-size:11.5px;color:var(--dim)}
 .chip-on{color:var(--mark);border-color:rgba(142,124,255,.45)}
+.chip-warn{color:var(--red);border-color:var(--red)}
 .h2hsum{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:14px}
 .h2hcell{border:1px solid var(--line);border-radius:var(--r);padding:12px;text-align:center}
 .h2hcell b{display:block;font-size:23px;font-weight:700}

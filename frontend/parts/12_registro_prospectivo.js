@@ -102,3 +102,24 @@ function scoreLog(entries) {
   };
 }
 
+/** Ligas cuyo registro prospectivo —el único que no admite trampa,
+    porque el pronóstico queda escrito antes del partido— va bastante
+    peor que la tasa base de la propia liga: la señal de que el modelo
+    se ha quedado desfasado y toca recalibrar, sin que haya que estar
+    mirándolo partido a partido. */
+function logDegradados(entries, { minN = 30, factor = 1.08 } = {}) {
+  const porLiga = new Map();
+  entries.forEach((e) => {
+    if (e.lg == null || e.gh === undefined || e.gh === null) return;
+    if (!porLiga.has(e.lg)) porLiga.set(e.lg, []);
+    porLiga.get(e.lg).push(e);
+  });
+  const out = [];
+  porLiga.forEach((lista, lg) => {
+    const s = scoreLog(lista);
+    if (s && s.n >= minN && s.logloss > s.baseLl * factor)
+      out.push({ lg, n: s.n, logloss: s.logloss, baseLl: s.baseLl });
+  });
+  return out;
+}
+
