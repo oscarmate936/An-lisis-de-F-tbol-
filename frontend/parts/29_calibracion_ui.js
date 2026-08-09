@@ -295,7 +295,7 @@ function Calibracion({ api, leagues, sel, setSel }) {
 
   async function guardar() {
     const payload = { params: P, league: sel.league, season: sel.season, objetivo, motor,
-      n: res?.n || 0, ts: Date.now() };
+      n: res?.n || 0, ts: Date.now(), auto: false };
     try {
       await storage.set(paramsKey(sel.league, objetivo), JSON.stringify(payload));
       setSavedFor(payload);
@@ -675,11 +675,14 @@ function Calibracion({ api, leagues, sel, setSel }) {
             )}
             {savedFor && (
               <p className="foot">
-                Guardados el {new Date(savedFor.ts).toLocaleDateString()} para{" "}
+                {savedFor.auto
+                  ? "Ajustados solos por la pizarra"
+                  : "Guardados a mano"} el {new Date(savedFor.ts).toLocaleDateString()} para{" "}
                 <b>{OBJETIVOS[savedFor.objetivo || "x1x2"]?.label || "el 1X2"}</b> con la temporada{" "}
                 <span className="mono">{savedFor.season}</span> ({savedFor.n} partidos). Mercados
                 usa los del 1X2 para construir la matriz; los de otros mercados quedan guardados
                 aparte para que puedas compararlos aquí.
+                {savedFor.auto && " Guarda aquí a mano cuando quieras fijar estos valores y que no se vuelvan a tocar solos."}
               </p>
             )}
           </div>

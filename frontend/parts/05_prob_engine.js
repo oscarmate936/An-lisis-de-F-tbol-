@@ -247,6 +247,31 @@ const P0 = {
 // la clave antigua para no perder lo ya guardado.
 const paramsKey = (lg, obj = "x1x2") => (obj === "x1x2" ? `params:${lg}` : `params:${lg}:${obj}`);
 
+/* Sin esto, cada liga se queda con los parámetros genéricos hasta que
+   alguien entra a mano en Calibración y pulsa Guardar: en la práctica,
+   casi ninguna. Activado de fábrica porque no cuesta peticiones aparte
+   (reaprovecha la temporada que Mercados ya pide para el modelo base) y
+   solo usa CPU que de todas formas se cede al hilo principal en trozos. */
+let AUTO_CALIBRACION = (() => {
+  try { return localStorage.getItem("auto-calibracion") !== "0"; } catch (e) { return true; }
+})();
+function ponAutoCalibracion(v) {
+  AUTO_CALIBRACION = !!v;
+  try { localStorage.setItem("auto-calibracion", v ? "1" : "0"); } catch (e) { /* sin espacio */ }
+}
+// Recalibrar cada tanto por si el equipo cambió de aires; cambiar de
+// temporada también lo dispara porque los parámetros de la anterior ya
+// no describen la plantilla actual. Una calibración guardada a mano no
+// se toca nunca sola: es una elección deliberada de quien la guardó, y
+// pisarla sin avisar sería peor que dejarla algo vieja.
+const CAL_STALE_MS = 45 * 24 * 3600e3;
+function calibracionCaducada(saved, season) {
+  if (!saved) return true;
+  if (saved.auto === false) return false;
+  if (saved.season != null && season != null && saved.season < season) return true;
+  return !saved.ts || Date.now() - saved.ts > CAL_STALE_MS;
+}
+
 /** Descanso y acumulación de partidos, a partir del propio historial. */
 function restFactor(recent, kickoff, seleccion = false) {
   if (!recent?.length) return { f: 1, days: null, n14: 0 };

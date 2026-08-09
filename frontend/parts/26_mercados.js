@@ -52,6 +52,9 @@ function Mercados({ api, fixture, onBoleto }) {
   const [soloXI, setSoloXI] = useState(false);
   const [params, setParams] = useState(P0);
   const [paramsInfo, setParamsInfo] = useState(null);
+  const [paramsListo, setParamsListo] = useState(false);
+  const [autoCalBusy, setAutoCalBusy] = useState(false);
+  const autoCalIntento = useRef(null);
   const [odds, setOdds] = useState(null);
   const [oddsBusy, setOddsBusy] = useState(false);
   const [oddsErr, setOddsErr] = useState(null);
@@ -71,17 +74,61 @@ function Mercados({ api, fixture, onBoleto }) {
   // Parámetros calibrados para esta competición, si los hay.
   useEffect(() => {
     let dead = false;
+    setParams(P0); setParamsInfo(null); setParamsListo(false);
     (async () => {
       try {
         const r = await storage.get(paramsKey(lgId));
-        if (dead || !r?.value) return;
-        const saved = JSON.parse(r.value);
-        setParams({ ...P0, ...saved.params });
-        setParamsInfo(saved);
+        if (dead) return;
+        if (r?.value) {
+          const saved = JSON.parse(r.value);
+          setParams({ ...P0, ...saved.params });
+          setParamsInfo(saved);
+        }
       } catch (e) { /* sin calibrar: valores por defecto */ }
+      finally { if (!dead) setParamsListo(true); }
     })();
     return () => { dead = true; };
   }, [lgId]);
+
+  /* ---------- calibración automática ----------
+     Si esta competición nunca se ha calibrado, o la calibración ya
+     tiene más de un mes o es de una temporada anterior, se reajustan
+     los parámetros solos en segundo plano con la última temporada que
+     tenga bastantes partidos jugados. No pide nada nuevo a la API: usa
+     la misma temporada que el modelo base ya descarga, que queda en
+     caché unas horas. */
+  useEffect(() => {
+    if (!AUTO_CALIBRACION || !paramsListo) return;
+    if (!calibracionCaducada(paramsInfo, season)) return;
+    const clave = `${lgId}:${season}`;
+    if (autoCalIntento.current === clave) return;
+    autoCalIntento.current = clave;
+    let dead = false;
+    setAutoCalBusy(true);
+    (async () => {
+      try {
+        for (const yr of [season, season - 1]) {
+          let ds;
+          try {
+            const fx = await api("fixtures", { league: lgId, season: yr }, TTL.daily);
+            ds = leagueDataset(fx);
+          } catch (e) { continue; }
+          if (ds.length < 60) continue;
+          const r = await fitParams(ds, P0, () => {}, { motor: "mle", objetivo: "x1x2", ajustarNu: true });
+          if (dead) return;
+          const payload = {
+            params: r.params, league: lgId, season: yr, objetivo: "x1x2",
+            motor: "mle", n: ds.length, ts: Date.now(), auto: true,
+          };
+          await storage.set(paramsKey(lgId), JSON.stringify(payload));
+          if (!dead) { setParams(payload.params); setParamsInfo(payload); }
+          return;
+        }
+      } catch (e) { /* sin bastantes partidos jugados: se sigue con lo de siempre */ }
+      finally { if (!dead) setAutoCalBusy(false); }
+    })();
+    return () => { dead = true; };
+  }, [api, lgId, season, paramsListo, paramsInfo]);
 
   /* ---------- carga del modelo base ---------- */
   useEffect(() => {
@@ -1232,8 +1279,13 @@ function Mercados({ api, fixture, onBoleto }) {
             </span>
           )}
           {paramsInfo ? (
-            <span className="chip chip-on" title={`Ajustados con la temporada ${paramsInfo.season} sobre ${paramsInfo.n} partidos`}>
-              Parámetros calibrados
+            <span className="chip chip-on"
+              title={`Ajustados ${paramsInfo.auto ? "solos" : "a mano"} con la temporada ${paramsInfo.season} sobre ${paramsInfo.n} partidos`}>
+              {paramsInfo.auto ? "Parámetros autoajustados" : "Parámetros calibrados"}
+            </span>
+          ) : autoCalBusy ? (
+            <span className="chip" title="Ajustando los parámetros a esta competición con la última temporada jugada">
+              Ajustando solos…
             </span>
           ) : (
             <span className="chip" title="Puedes ajustarlos en la pestaña Calibración">Parámetros por defecto</span>

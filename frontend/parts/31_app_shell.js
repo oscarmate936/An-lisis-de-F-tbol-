@@ -215,6 +215,7 @@ function AjIco({ name }) {
     densidad: <><path d="M2.5 5h13M2.5 9h13M2.5 13h8" /></>,
     letra: <><path d="M4 14 8 3l4 11M5.4 10.5h5.2" /><path d="M12.5 14v-5.2c0-1.1.9-1.6 2-1.6s2 .6 2 1.6V14" /></>,
     calculo: <><rect x="2.5" y="2.5" width="13" height="13" rx="3" /><path d="M6 9h6M9 6v6" /></>,
+    calibracion: <><path d="M9 2.5v3M9 12.5v3M2.5 9h3M12.5 9h3" /><circle cx="9" cy="9" r="3.6" /></>,
     copia: <><path d="M9 2.5v9M9 11.5 5.8 8.3M9 11.5l3.2-3.2" /><path d="M3 12.5v1.6c0 .8.7 1.4 1.5 1.4h9c.8 0 1.5-.6 1.5-1.4v-1.6" /></>,
     cuenta: <><circle cx="9" cy="6.2" r="3.2" /><path d="M2.8 15.2c.9-3 3.2-4.6 6.2-4.6s5.3 1.6 6.2 4.6" /></>,
     ajustes: <><path d="M9 2v2.2M9 13.8V16M16 9h-2.2M4.2 9H2M13.5 4.5l-1.5 1.5M5.5 12l-1.5 1.5M13.5 13.5 12 12M5.5 6 4 4.5" /><circle cx="9" cy="9" r="3" /></>,
@@ -243,6 +244,7 @@ function Switch({ on, onChange, label }) {
     además el único sitio desde donde se puede salir. */
 function Ajustes({ onClose, account, meta, tema, temaAplicado, setTema, aspecto, setAspecto, onSalir }) {
   const [completo, setCompleto] = useState(CALCULO_COMPLETO);
+  const [autoCal, setAutoCal] = useState(AUTO_CALIBRACION);
   const [msg, setMsg] = useState(null);
   const [err, setErr] = useState(null);
   const file = useRef(null);
@@ -347,6 +349,20 @@ function Ajustes({ onClose, account, meta, tema, temaAplicado, setTema, aspecto,
             <span className="list-row-end">
               <Switch on={completo} label="Precisión completa"
                 onChange={(v) => { ponCalculoCompleto(v); setCompleto(v); }} />
+            </span>
+          </div>
+          <div className="list-row">
+            <span className="list-row-icon"><AjIco name="calibracion" /></span>
+            <span className="list-row-text">
+              <span className="list-row-title">Calibración automática</span>
+              <span className="list-row-sub">
+                Ajusta sola los parámetros de cada competición con la última temporada jugada, sin
+                pedir peticiones nuevas a la API. Lo que guardes a mano en Calibración no se toca.
+              </span>
+            </span>
+            <span className="list-row-end">
+              <Switch on={autoCal} label="Calibración automática"
+                onChange={(v) => { ponAutoCalibracion(v); setAutoCal(v); }} />
             </span>
           </div>
 
