@@ -124,18 +124,29 @@ function Mercados({ api, fixture, onBoleto }) {
             ds = leagueDataset(fx);
           } catch (e) { continue; }
           if (ds.length < 60) continue;
-          // Se prueban los cuatro motores (lo mismo que "Comparar motores"
-          // en Calibración, pero solo) y se guarda el que menos log-loss
-          // dé en esta competición concreta: no todas las ligas se
-          // comportan igual de bien con el mismo motor.
-          let r = null;
+          // Se comparan los cuatro motores con los parámetros de fábrica
+          // (un pase cada uno, lo mismo que "Comparar motores" en
+          // Calibración) y solo el que gane pasa al ajuste fino de
+          // verdad. Hacerlo al revés —ajustar los cuatro a fondo y
+          // comparar— es lo que hacía antes esta misma función: con Elo
+          // o el ensamble el ajuste fino repite el cálculo unas 45 veces
+          // (una por cada combinación del rastreo), así que probar los
+          // cuatro a fondo antes de saber cuál merece la pena podía tardar
+          // minutos en segundo plano sin que se notara por qué.
+          let motorGanador = null, mejorLl = Infinity;
           for (const motor of MOTOR_CANDIDATOS) {
+            if (dead) return;
             try {
-              const r2 = await fitParams(ds, P0, () => {}, { motor, objetivo: "x1x2", ajustarNu: true });
-              if (!r || r2.logloss < r.logloss) r = r2;
+              const sc = await scoreConMotor(ds, P0, motor);
+              if (sc && sc.logloss < mejorLl) { mejorLl = sc.logloss; motorGanador = motor; }
             } catch (e) { /* este motor no da para bastantes predicciones con esta liga */ }
           }
-          if (!r) continue;
+          if (!motorGanador) continue;
+          if (dead) return;
+          let r = null;
+          try {
+            r = await fitParams(ds, P0, () => {}, { motor: motorGanador, objetivo: "x1x2", ajustarNu: true });
+          } catch (e) { continue; }
           if (dead) return;
           // Con bastante historial, además de las fuerzas se puede afinar
           // el 1X2 resultado a resultado (el empate suele quedar mal
