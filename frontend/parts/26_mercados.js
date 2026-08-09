@@ -1107,7 +1107,11 @@ function Mercados({ api, fixture, onBoleto }) {
         const full = byKey.get(p.key);
         return full ? { ...full, off: p.off } : p;
       }).filter(Boolean);
-      if (recuperadas.length) setPicks(recuperadas);
+      // Si ya se ha tocado algo mientras esto cargaba (posible: este
+      // efecto lee la combinada guardada de fondo, sin bloquear la
+      // pantalla), no se pisa: perder un toque que la persona acaba de
+      // ver aparecer es peor que no recuperar lo antiguo esta vez.
+      if (recuperadas.length) setPicks((cur) => (cur.length ? cur : recuperadas));
     })();
     return () => { dead = true; };
   }, [all.length, byKey, fixture.fixture.id]);
@@ -1151,11 +1155,16 @@ function Mercados({ api, fixture, onBoleto }) {
     // Con props de jugador no vale multiplicar: los goles del equipo y los
     // remates de sus delanteros van juntos. Se simula el partido entero.
     if (conJugadores && propRows.length) {
-      const r = mcJoint({
+      // Solo hace falta simular a los jugadores que de verdad están en
+      // la combinada: pasar toda la plantilla (40-60 nombres) multiplica
+      // el coste de cada simulación por jugadores que ni pintan.
+      const ids = new Set(vivas.filter((p) => p.simRef).map((p) => p.simRef.playerId));
+      const jugadores = [...ids].map((id) => lamsPorJugador.get(id)).filter(Boolean);
+      const r = jugadores.length === ids.size ? mcJoint({
         m: model.m, lh: model.lh, la: model.la, picks: vivas,
-        players: propRows.map((x) => ({ id: x.id, teamId: x.teamId, lamGl: x.lamGl, lamSot: x.lamSot, lamSh: x.lamSh })),
+        players: jugadores,
         homeId: home.id, n: recortar() ? 6000 : 20000,
-      });
+      }) : null;
       if (r) return { p: r.p, naive, modo: "simulada", se: r.se };
     }
     const exact = vivas.filter((p) => p.pred);
@@ -1163,7 +1172,7 @@ function Mercados({ api, fixture, onBoleto }) {
     let pj = exact.length ? sumWhere(model.m, (x, y) => exact.every((k) => k.pred(x, y))) : 1;
     pj *= rest.reduce((a, b) => a * b.p, 1);
     return { p: pj, naive, modo: rest.length === 0 ? "exacta" : "aproximada", nExact: exact.length };
-  }, [picks, model, propRows, home.id]);
+  }, [picks, model, propRows, lamsPorJugador, home.id]);
 
 
 

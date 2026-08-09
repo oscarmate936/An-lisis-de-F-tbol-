@@ -499,6 +499,10 @@ const RAPIDO = { sims: 5000 };
     permite decidir cuál sobra. */
 function combinada(lista, opciones) {
   const conViejos = !!(opciones && opciones.viejos);
+  // Calcular "sin esta" es una simulación de más por cada pata con
+  // jugador: quien solo necesita p/nPicks/nPartidos (el resumen de la
+  // barra de otros partidos, por ejemplo) puede saltárselo.
+  const conCostes = !opciones || opciones.costes !== false;
   const todas = lista || [];
   const porPartido = new Map();
   todas.forEach((s) => {
@@ -534,9 +538,17 @@ function combinada(lista, opciones) {
     nVivas += g.vivas.length;
   });
 
-  /* Coste de cada selección: la combinada sin ella. */
-  grupos.forEach((g) => {
-    if (!g.conjunta || !g.cuenta) return;
+  /* Coste de cada selección: la combinada sin ella. Los picks son los
+     mismos objetos que vive la combinada guardada, así que si un grupo
+     se queda fuera (partido caducado con "viejos" apagado) hay que
+     borrar el valor en vez de dejarlo tal cual: si no, se queda pegado
+     el coste de la última vez que ese grupo sí contó, calculado sobre
+     una combinada distinta a la de ahora. */
+  if (conCostes) grupos.forEach((g) => {
+    if (!g.conjunta || !g.cuenta) {
+      g.vivas.forEach((pick) => { pick.sinEsta = undefined; });
+      return;
+    }
     const pj = fin(g.conjunta.p) ? g.conjunta.p : g.conjunta.ingenua;
     const fuera = pj > 1e-12 ? p / pj : 0;
     g.vivas.forEach((pick) => {
@@ -568,9 +580,12 @@ function cadena(res) {
     let previa = 1;
     g.vivas.forEach((pick, i) => {
       const hasta = g.vivas.slice(0, i + 1);
-      const j = i === g.vivas.length - 1 && g.conjunta
-        ? g.conjunta.p
-        : jointDe(g.partido, hasta, RAPIDO).p;
+      // Todos los eslabones con el mismo presupuesto de simulación: usar
+      // el de g.conjunta (más preciso, pero con otra tirada de números
+      // aleatorios) solo para el último dejaba el tramo final comparando
+      // dos estimaciones con ruido distinto, y a veces salía "gratis" por
+      // pura casualidad del muestreo.
+      const j = jointDe(g.partido, hasta, RAPIDO).p;
       const cond = previa > 1e-12 ? clamp(j / previa, 1e-9, 1) : 1e-9;
       previa = j;
       links.push({
@@ -706,7 +721,7 @@ function sugerirCambios(res, max = 4) {
 function combinadaSalvo(lista, fxId) {
   const otras = (lista || []).filter((x) => x.fx !== fxId && slipViva(x));
   if (!otras.length) return { p: 1, n: 0, partidos: 0 };
-  const r = combinada(otras);
+  const r = combinada(otras, { costes: false });
   return r ? { p: r.p, n: r.nPicks, partidos: r.nPartidos } : { p: 1, n: 0, partidos: 0 };
 }
 

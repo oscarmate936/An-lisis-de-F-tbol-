@@ -200,7 +200,7 @@ async function scoreConMotor(ds, P, motor, useRest = true) {
     const key = motor === "ens" ? "pEns" : "pOrd";
     return scoreFromProbs(rows.map((r) => ({ ...r, ps: r[key] })));
   }
-  const preds = motor === "mle" ? runPredictionsMLE(ds, P) : runPredictions(ds, P, useRest);
+  const preds = motor === "mle" ? await runPredictionsMLE(ds, P) : runPredictions(ds, P, useRest);
   if (preds.length < 30) return null;
   return scorePredictions(preds, P.rho, { corr: P.corr, theta: P.theta, nu: P.nu });
 }
@@ -228,7 +228,7 @@ async function fitParams(list, start = P0, onTick = () => {}, opts = {}) {
       const s = scoreFromProbs(rows.map((r) => ({ ...r, ps: r[key], pO: 0.5, pB: 0.5 })));
       return { rho: P.rho, theta: P.theta, nu: P.nu, s };
     }
-    const preds = motor === "mle" ? runPredictionsMLE(list, P) : runPredictions(list, P);
+    const preds = motor === "mle" ? await runPredictionsMLE(list, P) : runPredictions(list, P);
     if (preds.length < 30) return null;
     let mejor = null;
     const corr = P.corr || "dc";

@@ -175,7 +175,7 @@ function Calibracion({ api, leagues, sel, setSel }) {
       s = scoreFromProbs(rows.map((r) => ({ ...r, ps: r[key] })));
       s.pesos = rows[rows.length - 1].w;
     } else {
-      const preds = motor === "mle" ? runPredictionsMLE(ds, P) : runPredictions(ds, P, useRest);
+      const preds = motor === "mle" ? await runPredictionsMLE(ds, P) : runPredictions(ds, P, useRest);
       if (preds.length < 30) return null;
       s = scorePredictions(preds, P.rho, { corr: P.corr, theta: P.theta, nu: P.nu });
     }

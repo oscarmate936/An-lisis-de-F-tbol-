@@ -140,6 +140,12 @@ async function runEnsemble(list, P, block, onAvance) {
         }
       }
       lastFit = i;
+      // El reajuste (Dixon-Coles + dos regresiones ordinales + la mezcla)
+      // es lo más caro de toda la vuelta y no cede el hilo por dentro:
+      // se cede aquí mismo nada más terminarlo, no solo al principio de
+      // la siguiente vuelta, para que un reajuste largo no se note como
+      // un tirón en la pantalla.
+      await ceder();
     }
     if (!fit) { featureUpdate(S, datos[i]); continue; }
     const L = lambdasFromFit(fit, m.h, m.a);

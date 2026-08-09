@@ -112,11 +112,17 @@ function lambdasFromFit(fit, homeId, awayId) {
 }
 
 /** Backtest con el motor de máxima verosimilitud. Reajusta cada bloque
-    de partidos usando solo lo anterior al bloque: sin filtraciones. */
-function runPredictionsMLE(list, P, block = 10) {
+    de partidos usando solo lo anterior al bloque: sin filtraciones.
+    Cada reajuste es una máxima verosimilitud sobre todo lo anterior, así
+    que el coste crece con el cuadrado de la temporada; se cede el hilo
+    de vez en cuando (como ya hace el ensamble) para que la pantalla no
+    se quede congelada mientras dura el rastreo de Calibración. */
+async function runPredictionsMLE(list, P, block = 10) {
   const out = [];
   let fit = null, fitUpTo = -1;
+  const ceder = rebanador();
   for (let i = 0; i < list.length; i++) {
+    await ceder();
     if (i >= P.minGames * 8 && (fit === null || i - fitUpTo >= block)) {
       const prior = list.slice(0, i);
       fit = (P.autoShrink ? fitDixonColesEB : fitDixonColes)(prior, { halfLife: P.halfLife * 2, ref: list[i].t, prior: P.k });

@@ -482,9 +482,12 @@ function Combinada({ api, onOpen }) {
   const peor = useMemo(() => {
     if (!res || res.nPicks < 2) return null;
     let cara = null;
-    res.grupos.forEach((g) => g.vivas.forEach((p) => {
-      if (fin(p.sinEsta) && (!cara || p.sinEsta > cara.sinEsta)) cara = p;
-    }));
+    res.grupos.forEach((g) => {
+      if (!g.cuenta) return;
+      g.vivas.forEach((p) => {
+        if (fin(p.sinEsta) && (!cara || p.sinEsta > cara.sinEsta)) cara = p;
+      });
+    });
     return cara && cara.sinEsta > res.p * 1.15 ? cara : null;
   }, [res]);
 
@@ -503,10 +506,19 @@ function Combinada({ api, onOpen }) {
     const todos = { ...resueltos, ...nuevos };
     const fuera = new Set(viejosG.map((g) => g.fx));
 
+    // La probabilidad que se guarda tiene que ser la de estos partidos
+    // que se archivan, no la de `res`: `res.p` sale de la combinada
+    // completa con el interruptor "viejos" actual, que normalmente deja
+    // fuera justo los partidos caducados que se están archivando aquí
+    // (si se archiva la combinada entera, `res.p` se queda en su 1
+    // inicial). Se recalcula aparte, solo con lo que de verdad se guarda.
+    const archivadas = (lista || []).filter((x) => fuera.has(x.fx));
+    const propia = combinada(archivadas, { viejos: true }) || { p: 1, ingenua: 1, grupos: [] };
+
     /* La ficha guarda cada selección con lo que le pasó de verdad. */
     const marcados = {
-      ...res,
-      grupos: viejosG.map((g) => {
+      ...propia,
+      grupos: propia.grupos.map((g) => {
         const r = todos[g.fx];
         return {
           ...g,
