@@ -607,7 +607,7 @@ function Combinada({ api, onOpen }) {
     finally { setAbriendo(null); }
   }
 
-  if (!lista) return <div className="page"><Skeleton filas={3} alto={110} /></div>;
+  if (!lista) return <div className="page cb-page"><Skeleton filas={3} alto={110} /></div>;
 
   const vacio = !res || !res.grupos.length;
   const enFoco = foco ? links.find((l) => l.id === foco) : null;
@@ -657,7 +657,7 @@ function Combinada({ api, onOpen }) {
   );
 
   return (
-    <div className="page">
+    <div className="page cb-page">
       <div className="page-head">
         <div>
           <h1 className="h1">Combinada</h1>

@@ -1755,6 +1755,38 @@ html[data-densidad="comoda"] .betval,html[data-densidad="comoda"] .ldside{paddin
 .volver-arriba:hover{filter:brightness(1.15)}
 .volver-arriba:focus-visible{outline:2px solid var(--mark);outline-offset:2px}
 .volver-arriba:active{transform:scale(.92)}
+
+/* ---------- combinada: consultas de contenedor ---------- */
+/* El encuadre de teléfono deja la app en unos 428px de ancho aunque el
+   navegador sea mucho más ancho (ver @media (min-width:760px) más
+   arriba), pero estas reglas de la combinada solo se simplificaban con
+   @media, que mira el ancho de la VENTANA, no el del propio encuadre:
+   en escritorio nunca se activaban, y el texto de cada selección
+   quedaba comprimido a 0 de ancho contra las columnas fijas de al
+   lado. Se repiten aquí con @container, que mira el ancho real de su
+   contenedor — así se disparan tanto en un móvil de verdad como
+   dentro del encuadre en un ordenador.
+   .cb-page (no .app ni .main) es a propósito: container-type añade el
+   mismo "contain" que usan transform/filter, que convierte a quien lo
+   lleva en el contenedor de posicionamiento de sus descendientes
+   position:fixed — ponerlo en un antepasado tan alto como .app se
+   habría llevado por delante la barra inferior, el cajón y los avisos
+   flotantes, que cuelgan de él. Esta clase vive solo en la raíz de la
+   pantalla Combinada, que no contiene nada de eso. */
+.cb-page{container-type:inline-size}
+
+@container (max-width:900px){
+  .cb-total{grid-template-columns:1fr}
+  .cb-cifra{border-right:none;border-bottom:1px solid var(--line);padding:22px 18px}
+  .cb-p{font-size:48px}
+  .cb-pick{grid-template-columns:30px minmax(0,1fr) 76px 26px;gap:10px;padding:10px 14px}
+  .cb-pick-fam,.cb-pick-coste{display:none}
+  .cb-swap{grid-template-columns:1fr;gap:10px;text-align:left}
+  .cb-swap-flecha{display:none}
+  .cb-swap-res{text-align:left;flex-direction:row;align-items:baseline;gap:8px}
+  .cb-aporte-fila{grid-template-columns:minmax(0,1fr) 60px 40px}
+  .cb-aporte-p{display:none}
+}
 `}</style>
   );
 }
