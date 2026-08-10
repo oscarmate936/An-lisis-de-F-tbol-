@@ -791,14 +791,12 @@ html[data-tema="claro"] .pitchwrap{background:linear-gradient(180deg,#F6F4EE,#EF
 /* ---------- barra de la combinada (dentro del partido) ---------- */
 /* El timón (.tabbar-rudder) quedó fijo abajo en todos los anchos con el
    rediseño Android, pero esta barra se quedó con bottom:0 desde antes de
-   eso: el timón le tapaba y recortaba la última línea de texto. var(--tabh)
-   solo mide el alto de los botones (66px); el propio timón le añade encima
-   14px de padding-top (para que el FAB acoplado sobresalga) más 1px de
-   borde — de ahí el "+ 15px". Suma también env(safe-area-inset-bottom),
-   el hueco del gesto del sistema, igual que .aviso-flotante, .undo y
-   .volver-arriba más abajo en este archivo. */
+   eso: el timón le tapaba y recortaba la última línea de texto. Usa
+   --tabbar-h (el alto real del timón, no solo el de sus botones) más
+   env(safe-area-inset-bottom), el hueco del gesto del sistema — igual que
+   .aviso-flotante, .undo y .volver-arriba más abajo en este archivo. */
 .builder{position:fixed;left:0;right:0;
-  bottom:calc(var(--tabh) + 15px + env(safe-area-inset-bottom));z-index:41;
+  bottom:calc(var(--tabbar-h) + env(safe-area-inset-bottom));z-index:41;
   background:rgba(9,12,19,.96);border-top:1px solid var(--mark);backdrop-filter:blur(10px)}
 .builder-in{max-width:1280px;margin:0 auto;padding:11px 20px;display:flex;flex-wrap:wrap;
   gap:14px;align-items:center}
@@ -1437,7 +1435,12 @@ html[data-densidad="comoda"] .betval,html[data-densidad="comoda"] .ldside{paddin
   .modal-fondo{padding:12px;align-items:flex-end}
   .modal{width:100%}
   .modal-scroll{max-height:72vh}
-  .term-pop{position:fixed;left:12px;right:12px;top:auto;bottom:76px;width:auto}
+  /* bottom:76px (fijo, sin --tabh ni margen de seguridad) se quedaba
+     corto frente al alto real del timón (81px + el hueco del gesto del
+     sistema): en cualquier móvil con navegación por gestos, este globo
+     quedaba tapado, no solo recortado. */
+  .term-pop{position:fixed;left:12px;right:12px;top:auto;
+    bottom:calc(16px + var(--tabbar-h) + env(safe-area-inset-bottom));width:auto}
   .fx-frescura{width:100%;justify-content:flex-start}
   .fx-filtros{gap:8px}
   .fx-orden{margin-left:0}
@@ -1459,7 +1462,6 @@ html[data-densidad="comoda"] .betval,html[data-densidad="comoda"] .ldside{paddin
   .cb-aporte-p{display:none}
   .cb-tip{position:fixed;left:12px;right:12px;bottom:auto;top:auto;transform:none;
     max-width:none;width:auto}
-  .aviso-flotante{bottom:calc(72px + env(safe-area-inset-bottom))}
   .lg-abrir{padding-left:14px}
   .builder-in{padding:10px 14px;gap:10px}
   .bbuscar{flex:1 1 100%;order:3}
@@ -1502,6 +1504,14 @@ html[data-densidad="comoda"] .betval,html[data-densidad="comoda"] .ldside{paddin
    cualquier app de Android, y se reserva su alto en todas partes. */
 .nav{display:none!important}
 :root{--tabh:66px}
+/* --tabh solo mide el alto de los botones del timón: el propio timón
+   (.tabbar-rudder, más abajo) le añade encima 14px de padding-top —
+   para que el FAB acoplado sobresalga— más 1px de borde. --tabbar-h es
+   el alto real que ocupa el timón en pantalla; cualquier elemento fijo
+   que necesite quedar justo encima del timón (o reservarle sitio en un
+   padding de scroll) debe usar este, no --tabh, o se solapa con él como
+   pasaba con la barra de "Ver selecciones" de Mercados. */
+:root{--tabbar-h:calc(var(--tabh) + 15px)}
 
 .tabbar{display:grid;grid-template-columns:repeat(4,1fr);position:fixed;left:0;right:0;bottom:0;
   z-index:42;max-width:var(--phone);margin:0 auto;background:var(--turf);
@@ -1529,7 +1539,10 @@ html[data-densidad="comoda"] .betval,html[data-densidad="comoda"] .ldside{paddin
 .btn-salir{display:none}
 .qpill{min-width:0;padding:6px 10px;border-radius:var(--pill);background:var(--turf)}
 .ctxbar-in{padding:8px 16px}
-.page{padding:16px 16px calc(88px + var(--tabh))}
+/* calc(88px + var(--tabbar-h)) reserva el hueco real del timón (no solo
+   el de sus botones) para que el final de cada página no quede tapado
+   al hacer scroll hasta abajo del todo. */
+.page{padding:16px 16px calc(88px + var(--tabbar-h))}
 
 /* Botones Material: píldora rellena para la acción principal, tonal
    para las secundarias, texto simple para las discretas. */
@@ -1581,7 +1594,7 @@ html[data-densidad="comoda"] .betval,html[data-densidad="comoda"] .ldside{paddin
 
 /* Avisos flotantes y "deshacer": snackbars de Material, siempre por
    encima de la barra inferior. */
-.aviso-flotante,.undo{bottom:calc(16px + var(--tabh) + env(safe-area-inset-bottom));
+.aviso-flotante,.undo{bottom:calc(16px + var(--tabbar-h) + env(safe-area-inset-bottom));
   background:var(--turf2);border-color:var(--line-soft);box-shadow:var(--sh2)}
 .aviso-flotante{border-radius:var(--pill)}
 .undo{border-radius:var(--r)}
@@ -1756,7 +1769,7 @@ html[data-densidad="comoda"] .betval,html[data-densidad="comoda"] .ldside{paddin
 .paleta-vacio{padding:22px 14px;text-align:center;font-size:12.5px;color:var(--faint)}
 
 /* ---------- volver arriba ---------- */
-.volver-arriba{position:fixed;right:16px;bottom:calc(16px + var(--tabh) + env(safe-area-inset-bottom));
+.volver-arriba{position:fixed;right:16px;bottom:calc(16px + var(--tabbar-h) + env(safe-area-inset-bottom));
   z-index:36;width:44px;height:44px;border-radius:var(--pill);display:grid;place-items:center;
   background:var(--turf2);color:var(--chalk);border:1px solid var(--line-soft);box-shadow:var(--sh2);
   cursor:pointer;transition:filter .15s,transform .15s}
