@@ -24,8 +24,12 @@ function matrixSampler(m) {
 }
 
 /** Probabilidad conjunta por simulación cuando hay props de jugador:
-    los goles del equipo y los remates de sus jugadores no son independientes. */
-function mcJoint({ m, lh, la, picks, players, homeId, n = 20000 }) {
+    los goles del equipo y los remates de sus jugadores no son independientes.
+    Es async y cede el hilo cada 40ms (como el resto de cálculos largos):
+    con 20 000 pasadas y varios jugadores por partido, hacerlo de un tirón
+    congelaba toques y scroll mientras corría. */
+async function mcJoint({ m, lh, la, picks, players, homeId, n = 20000 }) {
+  const ceder = rebanador();
   const draw = matrixSampler(m);
   const matrixPicks = picks.filter((p) => p.pred);
   const simPicks = picks.filter((p) => p.simRef);
@@ -50,6 +54,7 @@ function mcJoint({ m, lh, la, picks, players, homeId, n = 20000 }) {
   let hit = 0;
   const goals = new Map(), sots = new Map(), shots = new Map();
   for (let i = 0; i < n; i++) {
+    await ceder();
     const s = draw();
     if (!matrixPicks.every((p) => p.pred(s.x, s.y))) continue;
     goals.clear(); sots.clear(); shots.clear();

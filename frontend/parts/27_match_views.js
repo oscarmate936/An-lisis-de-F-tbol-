@@ -22,8 +22,21 @@ function Match({ api, fixture, onTeam, onBack, onBoleto }) {
       .catch(() => {});
     return () => { vivo = false; };
   }, []);
+  const [data, setData] = useState({});
+  const [errs, setErrs] = useState({});
+  const [busy, setBusy] = useState({});
+  /* Copias siempre al día de data/busy para que `need` no cambie de
+     identidad en cada fetch que termina: si dependiera de data/busy
+     directamente, el efecto de carga por pestaña (que depende de need)
+     se repetiría entero cada vez que llega una respuesta, aunque el
+     propio guardián de abajo ya evite peticiones duplicadas. */
+  const dataRef = useRef(data);
+  const busyRef = useRef(busy);
+
   const refrescar = useCallback(() => {
     cacheOlvidar((k) => k.includes("fixture=" + fixture.fixture.id) || k.includes("id=" + fixture.fixture.id));
+    dataRef.current = {};
+    busyRef.current = {};
     setData({});
     setErrs({});
   }, [fixture.fixture.id]);
@@ -32,9 +45,6 @@ function Match({ api, fixture, onTeam, onBack, onBoleto }) {
     setTab(id);
     try { storage.set("ultima-pestana", id).catch(() => {}); } catch (e) { /* nada */ }
   }, []);
-  const [data, setData] = useState({});
-  const [errs, setErrs] = useState({});
-  const [busy, setBusy] = useState({});
   const fx = fixture.fixture;
   const home = fixture.teams.home;
   const away = fixture.teams.away;
@@ -43,19 +53,23 @@ function Match({ api, fixture, onTeam, onBack, onBoleto }) {
 
   const need = useCallback(
     async (slot, path, params, ttl) => {
-      if (data[slot] !== undefined || busy[slot]) return;
+      if (dataRef.current[slot] !== undefined || busyRef.current[slot]) return;
+      busyRef.current = { ...busyRef.current, [slot]: true };
       setBusy((b) => ({ ...b, [slot]: true }));
       try {
         const r = await api(path, params, ttl);
+        dataRef.current = { ...dataRef.current, [slot]: r };
         setData((d) => ({ ...d, [slot]: r }));
       } catch (e) {
         setErrs((x) => ({ ...x, [slot]: e.message }));
+        dataRef.current = { ...dataRef.current, [slot]: [] };
         setData((d) => ({ ...d, [slot]: [] }));
       } finally {
+        busyRef.current = { ...busyRef.current, [slot]: false };
         setBusy((b) => ({ ...b, [slot]: false }));
       }
     },
-    [api, data, busy]
+    [api]
   );
 
   // Carga perezosa por pestaña: no gastamos cuota en lo que no miras.

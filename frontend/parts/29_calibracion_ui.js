@@ -24,7 +24,7 @@ class ErrorBoundary extends React.Component {
           </button>
           {this.props.onBack && (
             <button className="btn btn-ghost" onClick={this.props.onBack}>
-              Volver a la cartelera
+              {this.props.backLabel || "Volver a la cartelera"}
             </button>
           )}
         </div>

@@ -51,6 +51,16 @@ jobs:
       - name: Dar permiso de ejecución a gradlew
         run: chmod +x android/gradlew
 
+      - name: Fijar la versión del APK (antes quedaba fija en 1 / "1.0")
+        # Sin esto, dos APKs compilados en fechas distintas llevan el mismo
+        # número de versión: Android no puede detectar cuál es la más nueva,
+        # y quien instala manualmente (única vía, no hay Play Store) no tiene
+        # forma de saberlo tampoco. run_number crece en cada ejecución, así
+        # que sirve de versionCode válido (Android exige un entero creciente).
+        run: |
+          sed -i "s/versionCode 1/versionCode ${{ github.run_number }}/" android/app/build.gradle
+          sed -i "s/versionName \"1.0\"/versionName \"1.0.${{ github.run_number }}-${GITHUB_SHA::7}\"/" android/app/build.gradle
+
       - name: Compilar el APK de depuración
         working-directory: android-app/android
         run: ./gradlew assembleDebug --no-daemon

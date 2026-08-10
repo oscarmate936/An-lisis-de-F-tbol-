@@ -165,6 +165,20 @@ function Ayuda({ onClose }) {
             `${t} ${d}`.toLowerCase().includes(q.trim().toLowerCase())) && (
             <p className="foot" style={{ marginTop: 0 }}>Ningún término coincide con “{q}”.</p>
           )}
+
+          <div className="rule"><span className="rule-label">Privacidad</span><span className="rule-line" /></div>
+          <p className="foot" style={{ marginTop: 0 }}>
+            Tu clave de API-Football, los boletos y tus preferencias se guardan solo en el
+            almacenamiento privado de este dispositivo (nunca en un servidor propio: esta app no
+            tiene backend). Cada búsqueda o partido que consultas se pide directamente a
+            api-sports.io usando esa clave, para poder mostrarte los datos — es el único tercero
+            al que se envía algo.
+          </p>
+          <p className="foot">
+            Lo ya descargado (partidos, equipos, cuotas) queda en caché hasta 24 horas para no
+            gastar peticiones de más, y se poda solo con el tiempo. "Salir y olvidar la clave", en
+            Ajustes, borra la clave y toda esa caché del dispositivo de una vez.
+          </p>
         </div>
       </div>
     </div>
@@ -264,7 +278,12 @@ function Ajustes({ onClose, account, meta, tema, temaAplicado, setTema, aspecto,
     setErr(null); setMsg(null);
     try {
       const txt = await f.text();
-      const n = await respaldoImportar(JSON.parse(txt));
+      let json;
+      try { json = JSON.parse(txt); }
+      catch (e) {
+        throw new Error("Ese archivo no es un JSON válido. Elige el archivo de copia (.json) que descargaste desde aquí.");
+      }
+      const n = await respaldoImportar(json);
       setMsg(`Restaurados ${n} ${n === 1 ? "boleto" : "boletos"}. El aspecto se aplica al recargar.`);
       avisar(`Restaurados ${n} ${n === 1 ? "boleto" : "boletos"}`);
     } catch (e) { setErr(e.message); }
@@ -763,7 +782,7 @@ function App() {
     } catch (e) {
       /* nada */
     }
-    cache.clear();
+    await cacheBorrarTodo();
     setApiKey("");
     setAccount(null);
     setLeagues([]);
@@ -1062,29 +1081,39 @@ function App() {
         <Deshacer />
         <Aviso />
         <VolverArriba />
-        {ayuda && <Ayuda onClose={() => setAyuda(false)} />}
+        {ayuda && (
+          <ErrorBoundary onBack={() => setAyuda(false)} backLabel="Cerrar">
+            <Ayuda onClose={() => setAyuda(false)} />
+          </ErrorBoundary>
+        )}
         {ajustes && (
-          <Ajustes
-            onClose={() => setAjustes(false)}
-            account={account} meta={meta}
-            tema={tema} temaAplicado={temaAplicado} setTema={elegirTema}
-            aspecto={aspecto} setAspecto={setAspecto}
-            onSalir={() => { setAjustes(false); disconnect(); }}
-          />
+          <ErrorBoundary onBack={() => setAjustes(false)} backLabel="Cerrar">
+            <Ajustes
+              onClose={() => setAjustes(false)}
+              account={account} meta={meta}
+              tema={tema} temaAplicado={temaAplicado} setTema={elegirTema}
+              aspecto={aspecto} setAspecto={setAspecto}
+              onSalir={() => { setAjustes(false); disconnect(); }}
+            />
+          </ErrorBoundary>
         )}
         {drawer && (
-          <Drawer
-            onClose={() => setDrawer(false)}
-            account={account} tema={temaAplicado} cambiarTema={cambiarTema}
-            onAyuda={() => setAyuda(true)}
-            onAjustes={() => setAjustes(true)}
-            onLigas={() => irA("league")}
-            onBuscar={() => setPaleta(true)}
-          />
+          <ErrorBoundary onBack={() => setDrawer(false)} backLabel="Cerrar">
+            <Drawer
+              onClose={() => setDrawer(false)}
+              account={account} tema={temaAplicado} cambiarTema={cambiarTema}
+              onAyuda={() => setAyuda(true)}
+              onAjustes={() => setAjustes(true)}
+              onLigas={() => irA("league")}
+              onBuscar={() => setPaleta(true)}
+            />
+          </ErrorBoundary>
         )}
         {paleta && (
-          <Paleta onClose={() => setPaleta(false)} acciones={paletaAcciones}
-            recientes={recientes} onBuscar={irYBuscar} />
+          <ErrorBoundary onBack={() => setPaleta(false)} backLabel="Cerrar">
+            <Paleta onClose={() => setPaleta(false)} acciones={paletaAcciones}
+              recientes={recientes} onBuscar={irYBuscar} />
+          </ErrorBoundary>
         )}
 
         {/* La navegación vive siempre abajo, al pulgar: tres secciones
@@ -1114,15 +1143,17 @@ function App() {
         </nav>
 
         {coach && (
-          <Coachmarks
-            pasos={[
-              { ref: menuBtnRef, titulo: "Tu menú",
-                texto: "Ajustes, ayuda y tus ligas fijadas viven aquí. La tecla M lo abre y lo cierra." },
-              { ref: fabBtnRef, titulo: "Arma tu combinada",
-                texto: "Añade selecciones desde cualquier partido y ciérrala aquí en el centro. La tecla 4 salta directo." },
-            ]}
-            onSalir={() => setCoach(false)}
-          />
+          <ErrorBoundary onBack={() => setCoach(false)} backLabel="Cerrar">
+            <Coachmarks
+              pasos={[
+                { ref: menuBtnRef, titulo: "Tu menú",
+                  texto: "Ajustes, ayuda y tus ligas fijadas viven aquí. La tecla M lo abre y lo cierra." },
+                { ref: fabBtnRef, titulo: "Arma tu combinada",
+                  texto: "Añade selecciones desde cualquier partido y ciérrala aquí en el centro. La tecla 4 salta directo." },
+              ]}
+              onSalir={() => setCoach(false)}
+            />
+          </ErrorBoundary>
         )}
       </div>
     </>

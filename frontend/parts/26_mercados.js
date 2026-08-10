@@ -1147,31 +1147,39 @@ function Mercados({ api, fixture, onBoleto }) {
     });
   }, [fixture.fixture.id, fichaPartido, lamsPorJugador]);
 
-  const joint = useMemo(() => {
+  const [joint, setJoint] = useState(null);
+  useEffect(() => {
+    let dead = false;
     const vivas = picks.filter((p) => !p.off);
-    if (!vivas.length || !model) return null;
+    if (!vivas.length || !model) { setJoint(null); return; }
     const naive = vivas.reduce((a, b) => a * b.p, 1);
     const conJugadores = vivas.some((p) => p.simRef);
     // Con props de jugador no vale multiplicar: los goles del equipo y los
-    // remates de sus delanteros van juntos. Se simula el partido entero.
+    // remates de sus delanteros van juntos. Se simula el partido entero
+    // (mcJoint es async y cede el hilo, así la pantalla no se congela).
     if (conJugadores && propRows.length) {
       // Solo hace falta simular a los jugadores que de verdad están en
       // la combinada: pasar toda la plantilla (40-60 nombres) multiplica
       // el coste de cada simulación por jugadores que ni pintan.
       const ids = new Set(vivas.filter((p) => p.simRef).map((p) => p.simRef.playerId));
       const jugadores = [...ids].map((id) => lamsPorJugador.get(id)).filter(Boolean);
-      const r = jugadores.length === ids.size ? mcJoint({
-        m: model.m, lh: model.lh, la: model.la, picks: vivas,
-        players: jugadores,
-        homeId: home.id, n: recortar() ? 6000 : 20000,
-      }) : null;
-      if (r) return { p: r.p, naive, modo: "simulada", se: r.se };
+      if (jugadores.length === ids.size) {
+        mcJoint({
+          m: model.m, lh: model.lh, la: model.la, picks: vivas,
+          players: jugadores,
+          homeId: home.id, n: recortar() ? 6000 : 20000,
+        }).then((r) => {
+          if (!dead && r) setJoint({ p: r.p, naive, modo: "simulada", se: r.se });
+        });
+        return () => { dead = true; };
+      }
     }
     const exact = vivas.filter((p) => p.pred);
     const rest = vivas.filter((p) => !p.pred);
     let pj = exact.length ? sumWhere(model.m, (x, y) => exact.every((k) => k.pred(x, y))) : 1;
     pj *= rest.reduce((a, b) => a * b.p, 1);
-    return { p: pj, naive, modo: rest.length === 0 ? "exacta" : "aproximada", nExact: exact.length };
+    setJoint({ p: pj, naive, modo: rest.length === 0 ? "exacta" : "aproximada", nExact: exact.length });
+    return () => { dead = true; };
   }, [picks, model, propRows, lamsPorJugador, home.id]);
 
 

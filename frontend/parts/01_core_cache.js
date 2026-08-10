@@ -61,6 +61,20 @@ function idbOp(modo, fn) {
   });
 }
 
+/** Borra varias claves en una sola transacción (idbOp solo sabe seguir
+    una petición a la vez, así que no sirve para un lote). */
+function idbBorrarClaves(claves) {
+  return new Promise((resolve) => {
+    if (!idb || !claves.length) return resolve();
+    try {
+      const tx = idb.transaction("cache", "readwrite");
+      claves.forEach((k) => tx.objectStore("cache").delete(k));
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => resolve();
+    } catch (e) { resolve(); }
+  });
+}
+
 async function restoreCache() {
   const ok = await idbListo;
   const ahora = Date.now();
@@ -68,9 +82,15 @@ async function restoreCache() {
     try {
       const todo = await idbOp("readonly", (st) => st.getAll());
       const claves = await idbOp("readonly", (st) => st.getAllKeys());
+      // Lo caducado (más de 24h) no se carga en memoria, pero antes tampoco
+      // se borraba de IndexedDB: con meses de uso la base crecía sin límite.
+      // Se poda aquí, una vez al arrancar, en vez de en cada lectura.
+      const viejas = [];
       todo.forEach((v, i) => {
         if (v && ahora - v.t < 24 * 3600e3) cache.set(claves[i], v);
+        else viejas.push(claves[i]);
       });
+      idbBorrarClaves(viejas);
       return;
     } catch (e) { /* sigue por localStorage */ }
   }
@@ -168,6 +188,19 @@ function cacheOlvidar(filtro) {
     if (idb) { try { idbOp("readwrite", (st) => st.delete(k)).catch(() => {}); } catch (e) { /* nada */ } }
   });
   return n;
+}
+
+/** Vacía la caché entera: memoria, IndexedDB y el resguardo de localStorage.
+    "Salir y olvidar la clave" solo vaciaba la copia en memoria (cache.clear())
+    y dejaba intacto en el dispositivo todo lo ya descargado — partidos,
+    equipos, cuotas —, algo que no encaja con lo que promete ese botón en un
+    dispositivo compartido. */
+async function cacheBorrarTodo() {
+  cache.clear();
+  if (idb) {
+    try { await idbOp("readwrite", (st) => st.clear()); } catch (e) { /* nada */ }
+  }
+  try { localStorage.removeItem(CACHE_KEY); } catch (e) { /* nada */ }
 }
 
 const TTL = {
