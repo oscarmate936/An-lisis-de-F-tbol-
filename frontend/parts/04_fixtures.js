@@ -1,4 +1,28 @@
-function Fixtures({ api, onOpen, onTeam, leagues }) {
+/** Campana de la cabecera de la portada: no hay notificaciones de
+    verdad que empujar, así que apunta a algo real — la cuota y el
+    resto de Ajustes — en vez de decorar con una promesa vacía. */
+function IcoCampana() {
+  return (
+    <svg className="ico" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.4"
+      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M9 2.3c-2 0-3.4 1.6-3.4 3.7v2c0 .8-.3 1.6-.9 2.2l-.6.6h9.8l-.6-.6a3.1 3.1 0 0 1-.9-2.2v-2c0-2.1-1.4-3.7-3.4-3.7Z" />
+      <path d="M7.3 13.4a1.9 1.9 0 0 0 3.4 0" />
+    </svg>
+  );
+}
+function IcoMas() {
+  return (
+    <svg className="ico" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.4"
+      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="2.3" y="2.3" width="5.4" height="5.4" rx="1.3" />
+      <rect x="10.3" y="2.3" width="5.4" height="5.4" rx="1.3" />
+      <rect x="2.3" y="10.3" width="5.4" height="5.4" rx="1.3" />
+      <rect x="10.3" y="10.3" width="5.4" height="5.4" rx="1.3" />
+    </svg>
+  );
+}
+
+function Fixtures({ api, onOpen, onTeam, leagues, account, onBuscar, onCombinada, onCalibracion, onMas, onAjustes, remaining, limit }) {
   const [date, setDate] = useState(isoDay(new Date()));
   const [live, setLive] = useState(false);
   const [q, setQ] = useState("");
@@ -197,9 +221,77 @@ function Fixtures({ api, onOpen, onTeam, leagues }) {
       return n;
     });
 
+  const nombre = account?.account?.firstname || "";
+  const hora = new Date().getHours();
+  const saludo = hora < 12 ? "Buenos días" : hora < 20 ? "Buenas tardes" : "Buenas noches";
+  const etiquetaDia = live
+    ? "En directo, ahora mismo"
+    : (dias.find((d) => d.iso === date)?.etiqueta ||
+        new Date(date + "T12:00:00").toLocaleDateString("es", { day: "numeric", month: "short" }));
+  const cuotaBaja = remaining != null && limit ? remaining / limit < 0.15 : false;
+
   return (
     <PullToRefresh onRefresh={async () => { cacheOlvidar((k) => k.startsWith("fixtures?")); await load(); }}>
     <div className="page">
+      <div className="home-greet">
+        <Crest name={nombre || "Acierto"} size={44} pill alt="" />
+        <div className="home-greet-txt">
+          <p className="home-greet-hi">{nombre ? `Hola, ${nombre}` : "Hola"} 👋</p>
+          <span className="home-greet-sub">{saludo}</span>
+        </div>
+        {onAjustes && (
+          <button className="home-greet-bell" aria-label="Cuota y ajustes" onClick={onAjustes}>
+            <IcoCampana />
+            {cuotaBaja && <span className="home-greet-dot" />}
+          </button>
+        )}
+      </div>
+
+      <section className="hero" aria-label="Resumen del momento">
+        <div className="hero-top">
+          <span className="hero-eyebrow">{etiquetaDia}</span>
+          {remaining != null && (
+            <span className="hero-pill mono">{remaining}{limit ? `/${limit}` : ""} peticiones</span>
+          )}
+        </div>
+        <div className="hero-big mono">{rows ? total : "—"}</div>
+        <div className="hero-sub">{total === 1 ? "partido en la cartelera" : "partidos en la cartelera"}</div>
+        <div className="hero-stats">
+          <div className="hero-stat"><b className="mono">{vivos}</b><span>En juego</span></div>
+          <div className="hero-stat"><b className="mono">{grouped.length}</b><span>Competiciones</span></div>
+          <div className="hero-stat"><b className="mono">{marcados.size}</b><span>Con selección</span></div>
+        </div>
+      </section>
+
+      {(onBuscar || onCombinada || onCalibracion || onMas) && (
+        <div className="quick-row">
+          {onBuscar && (
+            <button className="quick-tile quick-1" onClick={onBuscar}>
+              <span className="quick-tile-ico"><AjIco name="buscar" /></span>
+              <span className="quick-tile-lab">Buscar</span>
+            </button>
+          )}
+          {onCombinada && (
+            <button className="quick-tile quick-2" onClick={onCombinada}>
+              <span className="quick-tile-ico"><Ico name="combinada" /></span>
+              <span className="quick-tile-lab">Combinada</span>
+            </button>
+          )}
+          {onCalibracion && (
+            <button className="quick-tile quick-3" onClick={onCalibracion}>
+              <span className="quick-tile-ico"><Ico name="calibracion" /></span>
+              <span className="quick-tile-lab">Calibración</span>
+            </button>
+          )}
+          {onMas && (
+            <button className="quick-tile quick-4" onClick={onMas}>
+              <span className="quick-tile-ico"><IcoMas /></span>
+              <span className="quick-tile-lab">Más</span>
+            </button>
+          )}
+        </div>
+      )}
+
       <div className="page-head">
         <div>
           <h1 className="h1">Partidos</h1>
@@ -378,7 +470,7 @@ function Fixtures({ api, onOpen, onTeam, leagues }) {
           <section key={g.key} className="card lg-card">
             <div className="card-head lg-toggle">
               <button className="lg-abrir" onClick={() => alternar(g.key)} aria-expanded={abierta}>
-                <Crest src={g.league.logo} alt="" size={20} />
+                <Crest src={g.league.logo} alt="" size={20} name={g.league.name} />
                 <span className="lg-name">{g.league.name}</span>
                 <span className="lg-country">{g.league.country}</span>
                 {g.vivos > 0 && <span className="lg-vivo"><span className="dot" />{g.vivos}</span>}
