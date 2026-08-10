@@ -1808,6 +1808,90 @@ html[data-densidad="comoda"] .betval,html[data-densidad="comoda"] .ldside{paddin
   .cb-aporte-fila{grid-template-columns:minmax(0,1fr) 60px 40px}
   .cb-aporte-p{display:none}
 }
+
+/* ===============================================================
+   PORTADA — lenguaje visual de app de saldo/movimientos
+   La cartelera abre con lo mismo que abriría cualquier app de banca:
+   un saludo, una tarjeta con el pulso del momento en vez de un saldo,
+   una fila de accesos directos, y la lista de siempre reconvertida en
+   tarjetas sueltas en vez de filas pegadas. Va al final del archivo a
+   propósito, por la misma razón que el bloque ANDROID SHELL de más
+   arriba: en un empate de especificidad gana la regla que aparece
+   más abajo, así que esto se impone sin reescribir nada de arriba.
+   =============================================================== */
+:root{
+  --hero-a:#8271F6; --hero-b:#2A2170;
+  --cool-soft:rgba(127,209,255,.14);
+}
+html[data-tema="claro"]{
+  --hero-a:#6E5BEE; --hero-b:#31258C;
+  --cool-soft:rgba(11,109,147,.10);
+}
+
+/* iniciales de respaldo (Crest sin escudo/foto) */
+.crest-avatar{display:inline-flex;align-items:center;justify-content:center;border-radius:var(--r);
+  font-weight:700;flex:0 0 auto;font-family:'Roboto Flex','Roboto',sans-serif;
+  font-variation-settings:'wdth' 118;letter-spacing:-.01em}
+.crest-avatar-pill{border-radius:var(--pill)}
+
+/* saludo */
+.home-greet{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.home-greet-av{border-radius:var(--pill)}
+.home-greet-txt{display:flex;flex-direction:column;gap:1px;min-width:0}
+.home-greet-hi{font-size:19px;font-weight:700;letter-spacing:-.01em;margin:0;
+  font-variation-settings:'wdth' 118}
+.home-greet-sub{font-size:12px;color:var(--dim)}
+.home-greet-bell{all:unset;cursor:pointer;margin-left:auto;width:38px;height:38px;border-radius:var(--pill);
+  display:grid;place-items:center;background:var(--turf2);color:var(--dim);flex:0 0 auto;position:relative}
+.home-greet-bell:hover{color:var(--chalk)}
+.home-greet-bell:focus-visible{outline:2px solid var(--mark);outline-offset:2px}
+.home-greet-bell .ico{width:18px;height:18px}
+.home-greet-dot{position:absolute;top:7px;right:8px;width:7px;height:7px;border-radius:99px;
+  background:var(--red);box-shadow:0 0 0 2px var(--turf2)}
+
+/* tarjeta hero: el pulso del día en vez de un saldo */
+.hero{position:relative;overflow:hidden;border-radius:var(--r-lg);padding:22px 20px;color:#fff;
+  background:linear-gradient(125deg,var(--hero-a),var(--hero-b));box-shadow:var(--sh2);margin-bottom:var(--gap)}
+.hero::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(220px 160px at 88% -18%,rgba(255,255,255,.22),transparent 70%)}
+.hero-top{display:flex;align-items:center;justify-content:space-between;gap:10px;position:relative}
+.hero-eyebrow{display:flex;align-items:center;gap:6px;font-size:12px;color:rgba(255,255,255,.78)}
+.hero-pill{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;color:#fff;
+  background:rgba(255,255,255,.18);border-radius:var(--pill);padding:5px 11px;flex:0 0 auto;
+  white-space:nowrap}
+.hero-big{font-size:38px;font-weight:800;letter-spacing:-.02em;line-height:1;margin:14px 0 4px;
+  position:relative;font-variation-settings:'wdth' 122}
+.hero-sub{font-size:12px;color:rgba(255,255,255,.75);position:relative}
+.hero-stats{display:flex;gap:22px;margin-top:16px;position:relative;flex-wrap:wrap}
+.hero-stat{display:flex;flex-direction:column;gap:2px}
+.hero-stat b{font-size:16px;font-weight:700}
+.hero-stat span{font-size:10.5px;color:rgba(255,255,255,.72);text-transform:uppercase;letter-spacing:.06em}
+
+/* fila de accesos rápidos */
+.quick-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:calc(var(--gap) + 4px)}
+.quick-tile{all:unset;cursor:pointer;box-sizing:border-box;display:flex;flex-direction:column;
+  align-items:center;gap:8px;padding:4px 2px;text-align:center;border-radius:var(--r)}
+.quick-tile:focus-visible{outline:2px solid var(--mark);outline-offset:2px}
+.quick-tile-ico{width:50px;height:50px;border-radius:18px;display:grid;place-items:center;
+  transition:transform .1s,filter .15s}
+.quick-tile:active .quick-tile-ico{transform:scale(.93)}
+.quick-tile:hover .quick-tile-ico{filter:brightness(1.08)}
+.quick-tile-ico .ico{width:21px;height:21px}
+.quick-tile-lab{font-size:11px;color:var(--dim);font-weight:500}
+.quick-1 .quick-tile-ico{background:var(--mark-soft);color:var(--mark)}
+.quick-2 .quick-tile-ico{background:var(--sodium-soft);color:var(--sodium)}
+.quick-3 .quick-tile-ico{background:var(--cool-soft);color:var(--cool)}
+.quick-4 .quick-tile-ico{background:var(--turf2);color:var(--dim)}
+
+/* la cartelera pasa de filas pegadas a tarjetas sueltas, como
+   cualquier lista de movimientos: mismo marcado y misma lógica
+   (pulsación larga, menú de tres puntos, marcador de selecciones),
+   solo que cada partido respira en su propia tarjeta. */
+.fx-list{display:flex;flex-direction:column;gap:8px;padding:10px}
+.fx{background:var(--turf);border-radius:var(--r);border-bottom:none;padding:11px 14px}
+.fx:hover{background:var(--turf2)}
+.fx-marcada{box-shadow:inset 0 0 0 1.5px var(--mark);background:var(--mark-soft)}
+.fx-estado{background:var(--surface);border-radius:var(--r);padding:4px 2px;font-size:10.5px}
 `}</style>
   );
 }

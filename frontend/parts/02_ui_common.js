@@ -463,12 +463,47 @@ function VolverArriba() {
   );
 }
 
-function Crest({ src, alt, size = 26 }) {
-  return src ? (
-    <img className="crest" src={src} alt={alt} width={size} height={size} loading="lazy" />
-  ) : (
-    <span className="crest crest-blank" style={{ width: size, height: size }} />
-  );
+/* Paleta de tinte para las iniciales cuando no hay escudo/foto: seis
+   tonos saturados, ninguno de los que ya llevan significado propio en
+   la app (el oro del local, el azul del visitante, el rojo de vivo/
+   error, el verde de acierto). El color sale del propio nombre —
+   siempre el mismo equipo cae en el mismo tono, sin guardar nada. */
+const AVATAR_TINTES = [
+  ["#6D5DF0", "#FFFFFF"],
+  ["#E0A030", "#241300"],
+  ["#2FA6A0", "#FFFFFF"],
+  ["#E0637A", "#FFFFFF"],
+  ["#4C8DF0", "#FFFFFF"],
+  ["#6BAA55", "#0B1400"],
+];
+function avatarTinte(nombre) {
+  let h = 0;
+  const s = nombre || "?";
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return AVATAR_TINTES[h % AVATAR_TINTES.length];
+}
+function avatarIniciales(nombre) {
+  const partes = (nombre || "").trim().split(/\s+/).filter(Boolean);
+  if (!partes.length) return "?";
+  if (partes.length === 1) return partes[0].slice(0, 2).toUpperCase();
+  return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
+}
+
+/** Escudo/foto; si no hay, y se sabe el nombre, un cuadro con sus
+    iniciales y un tinte propio en vez de un hueco vacío. */
+function Crest({ src, alt, size = 26, name, pill }) {
+  if (src) return <img className="crest" src={src} alt={alt} width={size} height={size} loading="lazy" />;
+  if (name) {
+    const [bg, fg] = avatarTinte(name);
+    return (
+      <span className={"crest crest-avatar" + (pill ? " crest-avatar-pill" : "")}
+        style={{ width: size, height: size, background: bg, color: fg,
+          fontSize: Math.max(9, Math.round(size * 0.4)) }}>
+        {avatarIniciales(name)}
+      </span>
+    );
+  }
+  return <span className="crest crest-blank" style={{ width: size, height: size }} />;
 }
 
 /* --- LA CINTA DEL MINUTO: elemento firma ---

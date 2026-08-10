@@ -1053,7 +1053,11 @@ function App() {
           <ErrorBoundary key={view + (fixture ? ":" + fixture.fixture.id : "")}
             onBack={() => { setFixture(null); irA("fixtures", { fixture: null }); }}>
           {view === "fixtures" && (
-            <Fixtures api={api} leagues={leagues} onOpen={openFixture} onTeam={openTeam} />
+            <Fixtures api={api} leagues={leagues} onOpen={openFixture} onTeam={openTeam}
+              account={account} remaining={remaining} limit={limit}
+              onBuscar={() => setPaleta(true)} onCombinada={() => irA("combinada")}
+              onCalibracion={() => irA("calibracion")} onMas={() => setDrawer(true)}
+              onAjustes={() => setAjustes(true)} />
           )}
           {view === "match" && fixture && (
             <Match api={api} fixture={fixture} onBack={atras} onTeam={openTeam}

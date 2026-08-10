@@ -98,11 +98,11 @@ const FxRow = React.memo(function FxRow({ f, n, onOpen, onTeam, fav, onFijar, li
         <span className="fx-teams">
           {liga && <span className="fx-liga">{f.league.name}</span>}
           <span className={"fx-team" + (f.teams.home.winner ? " fx-win" : "")}>
-            <Crest src={f.teams.home.logo} alt="" size={20} />
+            <Crest src={f.teams.home.logo} alt="" size={22} name={f.teams.home.name} />
             <span className="fx-name">{f.teams.home.name}</span>
           </span>
           <span className={"fx-team" + (f.teams.away.winner ? " fx-win" : "")}>
-            <Crest src={f.teams.away.logo} alt="" size={20} />
+            <Crest src={f.teams.away.logo} alt="" size={22} name={f.teams.away.name} />
             <span className="fx-name">{f.teams.away.name}</span>
           </span>
         </span>
