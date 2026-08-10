@@ -76,7 +76,7 @@ function Match({ api, fixture, onTeam, onBack, onBoleto }) {
   return (
     <div className="page">
       <button className="back" onClick={onBack}>
-        ← Volver a los partidos
+        ← Volver
       </button>
 
       <header className="card sb">

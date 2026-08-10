@@ -525,6 +525,16 @@ function App() {
   const [drawer, setDrawer] = useState(false);
   const menuBtnRef = useRef(null);
   const fabBtnRef = useRef(null);
+  /* Copia siempre al día de fixture/teamCtx para poder escribirlos en
+     el historial en el mismo instante en que se navega, sin esperar a
+     que el efecto que los sincroniza vuelva a correr (para entonces
+     ya sería tarde: el paso de historial se habría guardado con el
+     valor viejo). navDepth cuenta cuántos peldaños ha empujado esta
+     sesión, para que el botón "Volver" en pantalla nunca saque a
+     quien lo usa de la propia app cuando ya no queda nada que deshacer. */
+  const fixtureRef = useRef(null);
+  const teamCtxRef = useRef(null);
+  const navDepth = useRef(0);
   const [coach, setCoach] = useState(false);
   const [paleta, setPaleta] = useState(false);
   const [recientes, setRecientes] = useState(() => recientesLeer());
@@ -763,30 +773,66 @@ function App() {
   }
 
   /* El gesto de retroceso del móvil sacaba de la app entera. Cada
-     sección entra en el historial para que atrás signifique atrás. */
-  const irA = useCallback((v) => {
+     sección entra en el historial para que atrás signifique atrás —
+     y con ella, qué partido o equipo estaba abierto en ese momento:
+     antes solo se guardaba el nombre de la sección, así que volver
+     atrás podía dejarte en "Mercados" sin ningún partido cargado, y
+     el botón "Volver" siempre mandaba a la cartelera sin importar de
+     dónde vinieras. `ctx` deja fijar explícitamente fixture/teamCtx en
+     el mismo paso (para cuando se abre un partido o un equipo nuevos);
+     si no se da, se usa lo que haya ahora mismo. */
+  const irA = useCallback((v, ctx) => {
+    const fx = ctx && "fixture" in ctx ? ctx.fixture : fixtureRef.current;
+    const tc = ctx && "teamCtx" in ctx ? ctx.teamCtx : teamCtxRef.current;
+    fixtureRef.current = fx;
+    teamCtxRef.current = tc;
     setView(v);
     try {
-      if (!history.state || history.state.v !== v) history.pushState({ v }, "");
+      const st = { v, fixture: fx, teamCtx: tc };
+      if (!history.state || history.state.v !== v) { history.pushState(st, ""); navDepth.current++; }
+      else history.replaceState(st, "");
     } catch (e) { /* en file:// puede no dejar; se sigue navegando igual */ }
   }, []);
 
+  /* El botón "Volver" en pantalla hace lo mismo que el gesto de
+     retroceso del sistema: deshace un paso del historial propio de la
+     app. Nunca saca de la app —si no queda nada que deshacer (por
+     ejemplo, tras recargar la página a medio navegar), cae a la
+     cartelera, que es un sitio seguro conocido. */
+  const atras = useCallback(() => {
+    if (navDepth.current > 0) {
+      try { history.back(); return; } catch (e) { /* cae al valor seguro de abajo */ }
+    }
+    irA("fixtures", { fixture: null });
+  }, [irA]);
+
   useEffect(() => {
     if (!account) return;
+    fixtureRef.current = fixture;
+    teamCtxRef.current = teamCtx;
     try {
-      if (!history.state || !history.state.v) history.replaceState({ v: view }, "");
+      if (!history.state || !history.state.v) history.replaceState({ v: view, fixture, teamCtx }, "");
     } catch (e) { /* nada */ }
-    const onPop = (e) => setView(e.state && e.state.v ? e.state.v : "fixtures");
+    const onPop = (e) => {
+      navDepth.current = Math.max(0, navDepth.current - 1);
+      const st = e.state || {};
+      fixtureRef.current = st.fixture ?? null;
+      teamCtxRef.current = st.teamCtx ?? null;
+      setView(st.v || "fixtures");
+      setFixture(st.fixture ?? null);
+      setTeamCtx(st.teamCtx ?? null);
+    };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [account]);
 
   const openTeam = (team, league) => {
-    setTeamCtx({ team, league: { id: league.id, name: league.name }, season: sel.season || seasonNow() });
-    irA("team");
+    const tc = { team, league: { id: league.id, name: league.name }, season: sel.season || seasonNow() };
+    setTeamCtx(tc);
+    irA("team", { teamCtx: tc });
   };
-  const openFixture = (f) => { setFixture(f); irA("match"); };
+  const openFixture = (f) => { setFixture(f); irA("match", { fixture: f }); };
 
   /* Ir a la cartelera y dejar ya escrita la búsqueda, tanto desde el
      buscador global como desde una reciente: la caja de Fixtures es
@@ -940,7 +986,10 @@ function App() {
                       {fixture.teams.home.name} — {fixture.teams.away.name}
                     </button>
                     <button className="ctx-x" aria-label="Cerrar partido"
-                      onClick={() => { setFixture(null); if (view === "match") irA("fixtures"); }}>×</button>
+                      onClick={() => {
+                        setFixture(null);
+                        irA(view === "match" ? "fixtures" : view, { fixture: null });
+                      }}>×</button>
                   </span>
                 )}
                 {teamCtx && (
@@ -950,7 +999,10 @@ function App() {
                       {teamCtx.team.name}
                     </button>
                     <button className="ctx-x" aria-label="Cerrar equipo"
-                      onClick={() => { setTeamCtx(null); if (view === "team") irA("fixtures"); }}>×</button>
+                      onClick={() => {
+                        setTeamCtx(null);
+                        irA(view === "team" ? "fixtures" : view, { teamCtx: null });
+                      }}>×</button>
                   </span>
                 )}
               </div>
@@ -980,12 +1032,12 @@ function App() {
           onPointerDown={swipe.onPointerDown} onPointerMove={swipe.onPointerMove}
           onPointerUp={swipe.onPointerUp} onPointerCancel={swipe.onPointerCancel}>
           <ErrorBoundary key={view + (fixture ? ":" + fixture.fixture.id : "")}
-            onBack={() => { irA("fixtures"); setFixture(null); }}>
+            onBack={() => { setFixture(null); irA("fixtures", { fixture: null }); }}>
           {view === "fixtures" && (
             <Fixtures api={api} leagues={leagues} onOpen={openFixture} onTeam={openTeam} />
           )}
           {view === "match" && fixture && (
-            <Match api={api} fixture={fixture} onBack={() => irA("fixtures")} onTeam={openTeam}
+            <Match api={api} fixture={fixture} onBack={atras} onTeam={openTeam}
               onBoleto={() => irA("combinada")} />
           )}
           {view === "league" && (
@@ -1001,7 +1053,7 @@ function App() {
               team={teamCtx.team}
               league={teamCtx.league}
               season={teamCtx.season}
-              onBack={() => irA(fixture ? "match" : "league")}
+              onBack={atras}
             />
           )}
           </ErrorBoundary>
