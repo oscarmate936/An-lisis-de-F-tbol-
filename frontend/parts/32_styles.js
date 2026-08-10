@@ -789,8 +789,17 @@ html[data-tema="claro"] .pitchwrap{background:linear-gradient(180deg,#F6F4EE,#EF
 .exp i{display:block;font-style:normal;font-size:9.5px;color:var(--faint);margin-top:4px}
 
 /* ---------- barra de la combinada (dentro del partido) ---------- */
-.builder{position:fixed;left:0;right:0;bottom:0;z-index:41;background:rgba(9,12,19,.96);
-  border-top:1px solid var(--mark);backdrop-filter:blur(10px);padding-bottom:env(safe-area-inset-bottom)}
+/* El timón (.tabbar-rudder) quedó fijo abajo en todos los anchos con el
+   rediseño Android, pero esta barra se quedó con bottom:0 desde antes de
+   eso: el timón le tapaba y recortaba la última línea de texto. var(--tabh)
+   solo mide el alto de los botones (66px); el propio timón le añade encima
+   14px de padding-top (para que el FAB acoplado sobresalga) más 1px de
+   borde — de ahí el "+ 15px". Suma también env(safe-area-inset-bottom),
+   el hueco del gesto del sistema, igual que .aviso-flotante, .undo y
+   .volver-arriba más abajo en este archivo. */
+.builder{position:fixed;left:0;right:0;
+  bottom:calc(var(--tabh) + 15px + env(safe-area-inset-bottom));z-index:41;
+  background:rgba(9,12,19,.96);border-top:1px solid var(--mark);backdrop-filter:blur(10px)}
 .builder-in{max-width:1280px;margin:0 auto;padding:11px 20px;display:flex;flex-wrap:wrap;
   gap:14px;align-items:center}
 .bpicks{display:flex;flex-wrap:wrap;gap:6px;flex:1;min-width:200px;max-height:64px;overflow-y:auto}
@@ -1409,7 +1418,6 @@ html[data-densidad="comoda"] .betval,html[data-densidad="comoda"] .ldside{paddin
   .tabbadge{position:absolute;top:9px;left:calc(50% + 6px);font-size:9px;font-weight:700;
     line-height:1;padding:2px 5px;border-radius:var(--pill);background:var(--mark);
     color:var(--mark-ink);font-style:normal}
-  .builder{bottom:calc(60px + env(safe-area-inset-bottom))}
 
   /* combinada */
   .cb-total{grid-template-columns:1fr}
