@@ -1821,11 +1821,9 @@ html[data-densidad="comoda"] .betval,html[data-densidad="comoda"] .ldside{paddin
    =============================================================== */
 :root{
   --hero-a:#8271F6; --hero-b:#2A2170;
-  --cool-soft:rgba(127,209,255,.14);
 }
 html[data-tema="claro"]{
   --hero-a:#6E5BEE; --hero-b:#31258C;
-  --cool-soft:rgba(11,109,147,.10);
 }
 
 /* iniciales de respaldo (Crest sin escudo/foto) */
@@ -1836,18 +1834,10 @@ html[data-tema="claro"]{
 
 /* saludo */
 .home-greet{display:flex;align-items:center;gap:12px;margin-bottom:16px}
-.home-greet-av{border-radius:var(--pill)}
 .home-greet-txt{display:flex;flex-direction:column;gap:1px;min-width:0}
 .home-greet-hi{font-size:19px;font-weight:700;letter-spacing:-.01em;margin:0;
   font-variation-settings:'wdth' 118}
 .home-greet-sub{font-size:12px;color:var(--dim)}
-.home-greet-bell{all:unset;cursor:pointer;margin-left:auto;width:38px;height:38px;border-radius:var(--pill);
-  display:grid;place-items:center;background:var(--turf2);color:var(--dim);flex:0 0 auto;position:relative}
-.home-greet-bell:hover{color:var(--chalk)}
-.home-greet-bell:focus-visible{outline:2px solid var(--mark);outline-offset:2px}
-.home-greet-bell .ico{width:18px;height:18px}
-.home-greet-dot{position:absolute;top:7px;right:8px;width:7px;height:7px;border-radius:99px;
-  background:var(--red);box-shadow:0 0 0 2px var(--turf2)}
 
 /* tarjeta hero: el pulso del día en vez de un saldo */
 .hero{position:relative;overflow:hidden;border-radius:var(--r-lg);padding:22px 20px;color:#fff;
@@ -1866,22 +1856,6 @@ html[data-tema="claro"]{
 .hero-stat{display:flex;flex-direction:column;gap:2px}
 .hero-stat b{font-size:16px;font-weight:700}
 .hero-stat span{font-size:10.5px;color:rgba(255,255,255,.72);text-transform:uppercase;letter-spacing:.06em}
-
-/* fila de accesos rápidos */
-.quick-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:calc(var(--gap) + 4px)}
-.quick-tile{all:unset;cursor:pointer;box-sizing:border-box;display:flex;flex-direction:column;
-  align-items:center;gap:8px;padding:4px 2px;text-align:center;border-radius:var(--r)}
-.quick-tile:focus-visible{outline:2px solid var(--mark);outline-offset:2px}
-.quick-tile-ico{width:50px;height:50px;border-radius:18px;display:grid;place-items:center;
-  transition:transform .1s,filter .15s}
-.quick-tile:active .quick-tile-ico{transform:scale(.93)}
-.quick-tile:hover .quick-tile-ico{filter:brightness(1.08)}
-.quick-tile-ico .ico{width:21px;height:21px}
-.quick-tile-lab{font-size:11px;color:var(--dim);font-weight:500}
-.quick-1 .quick-tile-ico{background:var(--mark-soft);color:var(--mark)}
-.quick-2 .quick-tile-ico{background:var(--sodium-soft);color:var(--sodium)}
-.quick-3 .quick-tile-ico{background:var(--cool-soft);color:var(--cool)}
-.quick-4 .quick-tile-ico{background:var(--turf2);color:var(--dim)}
 
 /* la cartelera pasa de filas pegadas a tarjetas sueltas, como
    cualquier lista de movimientos: mismo marcado y misma lógica

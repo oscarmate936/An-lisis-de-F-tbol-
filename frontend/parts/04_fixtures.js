@@ -1,28 +1,4 @@
-/** Campana de la cabecera de la portada: no hay notificaciones de
-    verdad que empujar, así que apunta a algo real — la cuota y el
-    resto de Ajustes — en vez de decorar con una promesa vacía. */
-function IcoCampana() {
-  return (
-    <svg className="ico" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.4"
-      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M9 2.3c-2 0-3.4 1.6-3.4 3.7v2c0 .8-.3 1.6-.9 2.2l-.6.6h9.8l-.6-.6a3.1 3.1 0 0 1-.9-2.2v-2c0-2.1-1.4-3.7-3.4-3.7Z" />
-      <path d="M7.3 13.4a1.9 1.9 0 0 0 3.4 0" />
-    </svg>
-  );
-}
-function IcoMas() {
-  return (
-    <svg className="ico" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.4"
-      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="2.3" y="2.3" width="5.4" height="5.4" rx="1.3" />
-      <rect x="10.3" y="2.3" width="5.4" height="5.4" rx="1.3" />
-      <rect x="2.3" y="10.3" width="5.4" height="5.4" rx="1.3" />
-      <rect x="10.3" y="10.3" width="5.4" height="5.4" rx="1.3" />
-    </svg>
-  );
-}
-
-function Fixtures({ api, onOpen, onTeam, leagues, account, onBuscar, onCombinada, onCalibracion, onMas, onAjustes, remaining, limit }) {
+function Fixtures({ api, onOpen, onTeam, leagues, account, remaining, limit }) {
   const [date, setDate] = useState(isoDay(new Date()));
   const [live, setLive] = useState(false);
   const [q, setQ] = useState("");
@@ -228,23 +204,20 @@ function Fixtures({ api, onOpen, onTeam, leagues, account, onBuscar, onCombinada
     ? "En directo, ahora mismo"
     : (dias.find((d) => d.iso === date)?.etiqueta ||
         new Date(date + "T12:00:00").toLocaleDateString("es", { day: "numeric", month: "short" }));
-  const cuotaBaja = remaining != null && limit ? remaining / limit < 0.15 : false;
-
   return (
     <PullToRefresh onRefresh={async () => { cacheOlvidar((k) => k.startsWith("fixtures?")); await load(); }}>
     <div className="page">
+      {/* Saludo e informe del momento: nada de botones aquí — Buscar,
+         Combinada, Calibración, Ajustes y el cajón ya tienen su sitio
+         fijo en la barra de arriba y en el timón de abajo; repetirlos
+         aquí como una fila más de iconos era la misma acción dos veces,
+         no un atajo. Esta franja es solo lectura. */}
       <div className="home-greet">
         <Crest name={nombre || "Acierto"} size={44} pill alt="" />
         <div className="home-greet-txt">
           <p className="home-greet-hi">{nombre ? `Hola, ${nombre}` : "Hola"} 👋</p>
           <span className="home-greet-sub">{saludo}</span>
         </div>
-        {onAjustes && (
-          <button className="home-greet-bell" aria-label="Cuota y ajustes" onClick={onAjustes}>
-            <IcoCampana />
-            {cuotaBaja && <span className="home-greet-dot" />}
-          </button>
-        )}
       </div>
 
       <section className="hero" aria-label="Resumen del momento">
@@ -262,35 +235,6 @@ function Fixtures({ api, onOpen, onTeam, leagues, account, onBuscar, onCombinada
           <div className="hero-stat"><b className="mono">{marcados.size}</b><span>Con selección</span></div>
         </div>
       </section>
-
-      {(onBuscar || onCombinada || onCalibracion || onMas) && (
-        <div className="quick-row">
-          {onBuscar && (
-            <button className="quick-tile quick-1" onClick={onBuscar}>
-              <span className="quick-tile-ico"><AjIco name="buscar" /></span>
-              <span className="quick-tile-lab">Buscar</span>
-            </button>
-          )}
-          {onCombinada && (
-            <button className="quick-tile quick-2" onClick={onCombinada}>
-              <span className="quick-tile-ico"><Ico name="combinada" /></span>
-              <span className="quick-tile-lab">Combinada</span>
-            </button>
-          )}
-          {onCalibracion && (
-            <button className="quick-tile quick-3" onClick={onCalibracion}>
-              <span className="quick-tile-ico"><Ico name="calibracion" /></span>
-              <span className="quick-tile-lab">Calibración</span>
-            </button>
-          )}
-          {onMas && (
-            <button className="quick-tile quick-4" onClick={onMas}>
-              <span className="quick-tile-ico"><IcoMas /></span>
-              <span className="quick-tile-lab">Más</span>
-            </button>
-          )}
-        </div>
-      )}
 
       <div className="page-head">
         <div>
