@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Al Día</string>
+    <string name="title_activity_main">Al Día</string>
+    <string name="package_name">com.aldia.tarjetas</string>
+    <string name="custom_url_scheme">com.aldia.tarjetas</string>
+</resources>

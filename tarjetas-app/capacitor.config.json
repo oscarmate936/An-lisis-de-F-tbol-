@@ -1,0 +1,25 @@
+{
+  "appId": "com.aldia.tarjetas",
+  "appName": "Al Día",
+  "webDir": "www",
+  "backgroundColor": "#0E1320",
+  "android": {
+    "backgroundColor": "#0E1320",
+    "allowMixedContent": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 400,
+      "backgroundColor": "#0E1320",
+      "showSpinner": false
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#0E1320"
+    },
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_aldia",
+      "iconColor": "#3B82F6"
+    }
+  }
+}

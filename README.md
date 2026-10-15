@@ -1,5 +1,10 @@
 # Acierto — terminal de análisis de partidos
 
+> **También en este repositorio:** [`tarjetas-app/`](tarjetas-app/README.md)
+> — *Al Día*, una app de Android para gestionar tarjetas de crédito
+> (fechas de corte y de pago, pago mínimo, recordatorios y plan para
+> salir de deudas).
+
 Terminal de análisis de fútbol sobre datos de [API-Football](https://www.api-football.com/)
 (API-Sports v3): fixtures en vivo, mercados y cuotas, alineaciones, un
 motor de modelos estadísticos (Dixon-Coles, Skellam, cópula gaussiana,

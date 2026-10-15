@@ -1,0 +1,4 @@
+node_modules/
+# www/ se vuelve a ensamblar con build_www.py desde src/: nunca se guarda
+# un HTML ya construido que podría quedar desactualizado.
+www/
