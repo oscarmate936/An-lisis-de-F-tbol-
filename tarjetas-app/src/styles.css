@@ -146,6 +146,7 @@ svg { flex-shrink: 0; }
   position: sticky; top: 0; z-index: 20;
   display: flex; align-items: center; gap: 8px;
   padding: calc(10px + var(--safe-t)) 16px 10px;
+  background: var(--bg);
   background: color-mix(in srgb, var(--bg) 88%, transparent);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
@@ -170,6 +171,7 @@ main.view.sin-tabs { padding-bottom: calc(var(--safe-b) + 32px); }
   height: calc(var(--tabbar-h) + var(--safe-b));
   padding-bottom: var(--safe-b);
   display: grid; grid-template-columns: repeat(5, 1fr);
+  background: var(--surface);
   background: color-mix(in srgb, var(--surface) 94%, transparent);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);

@@ -217,4 +217,8 @@ test("autoprueba de la app (la misma que corre en el emulador)", async () => {
   const p = await nuevaPagina();
   const r = await p.evaluate(() => window.AldiaAutoprueba());
   assert.equal(r.plugins.calculos, true);
+  assert.equal(r.plugins.pantallas, true, JSON.stringify(r.errores));
+  // No toca los datos de la persona: sigue en la bienvenida.
+  assert.ok(await p.$('[data-modo="ejemplo"]'));
+  assert.deepEqual(p.errores, []);
 });

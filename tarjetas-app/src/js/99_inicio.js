@@ -57,7 +57,15 @@
   // La usa la prueba en emulador de CI para comprobar, dentro del APK real,
   // que la interfaz y los plugins nativos responden. No modifica los datos
   // de la persona: trabaja con tarjetas de ejemplo en memoria.
-  async function autoprueba() {
+  // Al abrir en frío con el enlace llegan dos avisos (getLaunchUrl y
+  // appUrlOpen): se corre una sola vez.
+  let autopruebaEnCurso = null;
+  function autoprueba() {
+    if (!autopruebaEnCurso) autopruebaEnCurso = correrAutoprueba().finally(() => { setTimeout(() => { autopruebaEnCurso = null; }, 5000); });
+    return autopruebaEnCurso;
+  }
+
+  async function correrAutoprueba() {
     const r = { version: App.version, nativo: Plat.nativo, plugins: {}, errores: [] };
     const paso = async (nombre, fn) => {
       try { r.plugins[nombre] = (await fn()) ?? "ok"; } catch (e) { r.plugins[nombre] = "ERROR"; r.errores.push(`${nombre}: ${e && e.message}`); }
@@ -72,6 +80,31 @@
       Calc.historial(ts, hoy, 6);
       return res.length === 3;
     });
+    // Recorre todas las pantallas con datos de ejemplo en memoria (sin
+    // guardarlos) y vuelve a dejar los datos reales.
+    await paso("pantallas", async () => {
+      const real = Datos.estado;
+      const errores = [];
+      const alError = (e) => errores.push(e.message || String(e));
+      window.addEventListener("error", alError);
+      try {
+        Datos.estado = { ...real, onboarded: true, ajustes: { ...real.ajustes, seguridad: { ...real.ajustes.seguridad, pin: null } }, tarjetas: Ejemplo.generar() };
+        for (const tab of ["inicio", "tarjetas", "calendario", "planear", "aprende"]) App.ir(tab);
+        for (const t of Datos.estado.tarjetas) App.abrir("tarjeta", { id: t.id });
+        App.abrir("buscar");
+        App.abrir("ajustes");
+        Extras.mejorTarjeta(); UI.cerrarHoja(true);
+        Formularios.formTarjeta(Datos.estado.tarjetas[0].id); UI.cerrarHoja(true);
+        Formularios.formMovimiento({ tarjetaId: Datos.estado.tarjetas[0].id, tipo: "cargo" }); UI.cerrarHoja(true);
+        Importar.abrir(Datos.estado.tarjetas[0].id); UI.cerrarHoja(true);
+      } finally {
+        window.removeEventListener("error", alError);
+        Datos.estado = real;
+        App.ir("inicio");
+      }
+      if (errores.length) throw new Error(errores.join("; "));
+      return true;
+    });
     await paso("notificaciones", async () => Plat.LN ? (await Plat.LN.checkPermissions()).display : "sin plugin");
     await paso("alarmasExactas", async () => (await Avisos.estadoAlarmasExactas()) || "n/a");
     await paso("preferencias", async () => {
@@ -81,9 +114,10 @@
       return v === "1";
     });
     await paso("archivos", async () => {
-      await Plat.FS.writeFile({ path: "autoprueba.txt", data: "ok", directory: Plat.Dir.Cache, encoding: Plat.Enc.UTF8 });
-      const v = (await Plat.FS.readFile({ path: "autoprueba.txt", directory: Plat.Dir.Cache, encoding: Plat.Enc.UTF8 })).data;
-      await Plat.FS.deleteFile({ path: "autoprueba.txt", directory: Plat.Dir.Cache });
+      const nombre = `autoprueba-${Date.now()}.txt`;
+      await Plat.FS.writeFile({ path: nombre, data: "ok", directory: Plat.Dir.Cache, encoding: Plat.Enc.UTF8 });
+      const v = (await Plat.FS.readFile({ path: nombre, directory: Plat.Dir.Cache, encoding: Plat.Enc.UTF8 })).data;
+      await Plat.FS.deleteFile({ path: nombre, directory: Plat.Dir.Cache });
       return v === "ok";
     });
     await paso("widget", async () => { await Avisos.actualizarWidget(); return !!Plat.Widget; });
