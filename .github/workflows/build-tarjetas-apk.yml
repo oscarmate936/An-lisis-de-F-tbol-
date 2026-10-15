@@ -35,6 +35,11 @@ jobs:
 
       - name: SDK de Android
         uses: android-actions/setup-android@v3
+        with:
+          # Por defecto la acción pide el paquete "tools", que Google ya
+          # retiró (sdkmanager falla con "Failed to find package 'tools'").
+          # Gradle descarga solo la plataforma y build-tools que necesite.
+          packages: "platform-tools"
 
       - name: Instalar dependencias de Capacitor
         run: npm ci
