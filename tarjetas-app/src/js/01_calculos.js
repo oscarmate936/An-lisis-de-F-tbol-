@@ -660,7 +660,9 @@
         if (s.disponible < monto || s.disponible <= 0) { ok = false; motivos.push("sin crédito suficiente"); }
         if (s.proximoPago.estado === "vencido") { ok = false; motivos.push("tiene un pago vencido"); }
         const usoTras = s.t.limite > 0 ? (Math.max(0, s.deuda) + monto) / s.t.limite : 1;
-        if (usoTras >= 0.3) motivos.push(`quedaría en ${Math.round(usoTras * 100)}% de uso`);
+        // Una tarjeta casi al límite nunca se recomienda, aunque dé más días.
+        if (ok && usoTras >= 0.9) { ok = false; motivos.push(`quedaría casi al límite (${Math.round(usoTras * 100)}%)`); }
+        else if (usoTras >= 0.3) motivos.push(`quedaría en ${Math.round(usoTras * 100)}% de uso`);
         return { s, dias: s.diasHoy, limite: fechaLimite(s.t, corteDeCompra(s.t, hoyF)), ok, usoTras, motivos };
       })
       .sort((a, b) => (b.ok - a.ok) || (b.dias - a.dias) || (a.usoTras - b.usoTras));

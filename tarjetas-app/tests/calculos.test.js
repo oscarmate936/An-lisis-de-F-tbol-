@@ -270,6 +270,11 @@ test("meta, anualidad, presupuesto y mejor tarjeta", () => {
   const rank = C.mejorTarjetaHoy([C.resumen(t1, "2026-10-15"), C.resumen(t2, "2026-10-15")], "2026-10-15");
   assert.equal(rank[0].s.t.id, "x"); // cortó ayer: ~50 días
   assert.ok(rank[0].dias > rank[1].dias);
+  // casi al límite: no se recomienda aunque dé más días
+  const lleno = { ...t1, id: "z", saldoInicial: 9500 };
+  const rank2 = C.mejorTarjetaHoy([C.resumen(lleno, "2026-10-15"), C.resumen(t2, "2026-10-15")], "2026-10-15");
+  assert.equal(rank2[0].s.t.id, "y");
+  assert.equal(rank2[1].ok, false);
 });
 
 test("notificaciones: domiciliada, estado de cuenta y anualidad", () => {
