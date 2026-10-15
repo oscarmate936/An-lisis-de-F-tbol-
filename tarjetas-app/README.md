@@ -25,26 +25,45 @@ límite y explicaciones sencillas de cada concepto.
 
 **Extras para ayudarte**
 
-- **Mejor día para comprar** (el día después del corte) y cuántos días
-  tendrías para pagar una compra hecha hoy.
-- **Compras a meses / en cuotas**: mensualidades pagadas y pendientes; solo
-  la mensualidad del mes cuenta para el pago sin intereses.
-- **Calendario** con cortes, fechas límite y mejores días de compra, y
-  exportación a Google Calendar / calendario del teléfono (`.ics`).
-- **Simulador**: cuánto tardarías y cuánto pagarías de intereses pagando
-  solo el mínimo frente a un pago fijo, con gráfica mes a mes.
-- **Plan para salir de deudas**: con lo que puedes pagar al mes, te da el
-  orden (método avalancha o bola de nieve) y la fecha en que quedarías
-  libre de deudas.
-- **Recomendaciones** automáticas: pago vencido, fecha cercana, uso alto
-  del límite, estado de cuenta sin capturar, mejor día para comprar...
-- **Aprende**: glosario en lenguaje llano (con botones **?** en toda la
-  app), un diagrama del ciclo con las fechas de tu propia tarjeta, buenos
-  hábitos y un mini examen.
-- **Gastos por categoría** desde el último corte.
-- **Modo discreto** (difumina los montos), tema claro/oscuro/automático,
-  15 monedas de Latinoamérica, EE. UU. y España.
-- **Respaldo** en un archivo y restauración.
+- **Botones en la notificación**: "Ya pagué" registra el pago (con opción
+  de deshacer) y "Recordar mañana" pospone el aviso un día.
+- **¿Con qué tarjeta compro hoy?**: ordena tus tarjetas por los días que
+  tendrías para pagar una compra hecha hoy, revisando el crédito
+  disponible y cómo quedaría tu uso del límite.
+- **Mejor día para comprar** (el día después del corte).
+- **Recordatorio del estado de cuenta**: 3 días después de cada corte.
+- **Avisos a la hora exacta** (permiso de "alarmas y recordatorios" de
+  Android 12+, se pide desde Ajustes).
+- **Pago domiciliado**: si el banco cobra solo, el pago se registra en la
+  fecha límite y el aviso cambia a "revisa que tengas saldo".
+- **Intereses estimados**: si no pagas el total de un corte, se suman a la
+  deuda los intereses que probablemente cobrará el banco (+ IVA, 16% por
+  defecto en pesos mexicanos), hasta que captures el estado de cuenta real.
+- **Leer el estado de cuenta** desde el **PDF** del banco (también con
+  contraseña), una **foto** (lectura de texto en el propio teléfono, sin
+  internet) o **texto pegado**; revisas lo encontrado antes de guardar.
+- **Compras a meses / en cuotas** y **compras en dólares u otra moneda**
+  con tipo de cambio.
+- **Cargos recurrentes** (Netflix, gimnasio...) que se registran solos.
+- **Anualidad**: aviso 30 y 7 días antes para pedir que te la quiten.
+- **Presupuesto** mensual (total y por categoría) y por tarjeta, con aviso
+  al 80% y al 100%.
+- **Meta para liquidar una tarjeta**: cuánto pagar al mes para terminar a
+  tiempo.
+- **Historial**: compras y deuda mes a mes, con gráficas y tabla.
+- **Buscar y filtrar movimientos** de todas tus tarjetas.
+- **Calendario** con cortes, fechas límite, anualidades y cargos
+  recurrentes, y exportación a Google Calendar (`.ics`).
+- **Simulador** de "solo el mínimo" frente a un pago fijo, y **plan para
+  salir de deudas** (avalancha o bola de nieve).
+- **Widget** de Android con el próximo pago.
+- **Bloqueo con PIN y huella**.
+- **Recomendaciones** automáticas, sección **Aprende** con glosario,
+  diagrama del ciclo con tus fechas y mini examen.
+- **Modo discreto**, tema claro/oscuro/automático, 15 monedas.
+- **Respaldos**: copia automática semanal dentro del teléfono (Android la
+  incluye en tu copia de seguridad de Google si la tienes activada) y
+  respaldo manual en un archivo.
 
 **Privacidad**: no hay cuentas, servidores ni conexión con el banco. Todo
 se guarda en el teléfono. Nunca se pide el número completo de la tarjeta:
@@ -65,9 +84,28 @@ con el flujo `.github/workflows/build-tarjetas-apk.yml`:
 4. Al abrir la app y agregar tu primera tarjeta te pedirá permiso para
    enviar notificaciones. Acéptalo para recibir los recordatorios.
 
-Es un APK de **depuración**: sirve para instalarlo y usarlo, pero para
-publicarlo en Google Play hay que firmarlo con una clave propia (ver el
-README de `android-app/`, los pasos son los mismos).
+**Actualizar**: instala el APK nuevo encima del anterior; tus datos se
+conservan. Todos los APK se firman con la misma clave (guardada en
+`android/app/aldia-debug.keystore`). La excepción son los compilados antes
+de la versión 1.1: esos usaban una clave distinta en cada compilación, así
+que si tienes uno de esos instalado, desinstálalo una sola vez (guarda antes
+un respaldo desde Ajustes).
+
+### Publicar en Google Play
+
+Google Play pide un `.aab` firmado con una clave de publicación **tuya**
+(si la pierdes no podrás actualizar la app en la tienda, así que guárdala
+bien). Cuando quieras dar ese paso:
+
+1. Crea la clave en tu computadora:
+   `keytool -genkey -v -keystore aldia-release.keystore -alias aldia -keyalg RSA -keysize 2048 -validity 10000`
+2. Conviértela a texto: `base64 -w0 aldia-release.keystore` (en Mac: `base64 -i aldia-release.keystore`).
+3. En GitHub: **Settings → Secrets and variables → Actions → New
+   repository secret**, crea `ALDIA_KEYSTORE_BASE64` (el texto del paso 2),
+   `ALDIA_KEYSTORE_PASSWORD`, `ALDIA_KEY_ALIAS` (`aldia`) y
+   `ALDIA_KEY_PASSWORD`.
+4. La siguiente compilación publicará además el artefacto
+   `al-dia-tarjetas-publicacion` con `app-release.apk` y `app-release.aab`.
 
 ## Probarla en el navegador
 
@@ -84,7 +122,8 @@ notificaciones con la app cerrada (eso solo lo puede hacer el APK).
 ```bash
 cd tarjetas-app
 npm install
-npm test              # pruebas del motor de cálculo (node --test)
+npm test              # pruebas del motor de cálculo y del lector (node --test)
+npm run test:e2e      # pruebas de pantallas en Chromium (Playwright)
 npm run sync          # ensambla www/ y sincroniza el proyecto Android
 npx cap open android  # abre el proyecto en Android Studio
 python3 gen_icons.py  # regenera iconos y pantalla de arranque
@@ -101,7 +140,9 @@ tarjetas-app/
 │   ├── index.html, styles.css
 │   └── js/
 │       ├── 00_fechas.js       fechas de calendario sin zona horaria
-│       ├── 01_calculos.js     motor: cortes, pagos, mínimos, a meses, simulador, plan, avisos
+│       ├── 01_calculos.js     motor: cortes, pagos, mínimos, a meses, intereses, domiciliación,
+│       │                      recurrentes, metas, presupuestos, simulador, plan, avisos
+│       ├── 01b_lector.js      lee montos y fechas del texto de un estado de cuenta
 │       ├── 02_datos.js        guardado local, moneda, plugins
 │       ├── 03_ui.js           iconos, hojas inferiores, avisos
 │       ├── 04_avisos.js       notificaciones y exportación .ics
@@ -110,10 +151,13 @@ tarjetas-app/
 │       ├── 07_app.js          navegación y acciones
 │       ├── 08_formularios.js  tarjeta, movimiento, estado de cuenta
 │       ├── 09_ejemplo.js      datos de ejemplo
-│       ├── 10…15_*.js         pantallas
-│       └── 99_inicio.js       arranque
-├── tests/                     pruebas del motor
-├── android/                   proyecto nativo (Capacitor)
+│       ├── 10…18_*.js         pantallas (inicio, tarjetas, calendario, planear, aprende,
+│       │                      ajustes, búsqueda, extras, presupuesto/historial)
+│       ├── 19_bloqueo.js      PIN y huella
+│       ├── 20_importar.js     leer estado de cuenta (PDF / foto / texto)
+│       └── 99_inicio.js       arranque, botones de notificación y autoprueba
+├── tests/                     pruebas unitarias, de pantallas (e2e/) y archivos de ejemplo (fixtures/)
+├── android/                   proyecto nativo (Capacitor) + widget (AldiaWidget.java)
 ├── build_www.py, gen_icons.py
 └── capacitor.config.json
 ```
@@ -131,3 +175,14 @@ tarjetas-app/
   reglas reales cambian por banco y país: el estado de cuenta manda.
 - **Intereses**: tasa anual ÷ 12 sobre lo que no se paga. Es una
   aproximación; el banco usa el saldo promedio diario.
+
+### Pruebas en GitHub
+
+Cada compilación corre, en este orden: las pruebas unitarias, las pruebas
+de pantallas en Chromium (incluida la lectura de un PDF y de una foto con
+OCR, y el bloqueo con PIN), compila el APK y lo publica, y después lo
+**instala en un emulador de Android 14**, lo abre con
+`aldia://autoprueba` y revisa en el registro del sistema que la interfaz y
+los plugins nativos (notificaciones, almacenamiento, archivos, widget,
+huella) respondan. La captura del emulador queda en el artefacto
+`emulador-captura`.
