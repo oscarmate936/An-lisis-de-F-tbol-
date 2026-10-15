@@ -52,7 +52,48 @@
       await Plat.LN.createChannel({ id: CANAL, name: "Recordatorios de pago", description: "Fechas de pago y de corte de tus tarjetas",
         importance: 4, visibility: 1, vibration: true });
     } catch (e) { /* Android < 8 no tiene canales */ }
+    // Botones dentro de la notificación de pago.
+    try {
+      await Plat.LN.registerActionTypes({ types: [{ id: "PAGO", actions: [
+        { id: "pague", title: "Ya pagué" },
+        { id: "manana", title: "Recordar mañana" },
+      ] }] });
+    } catch (e) { /* sin acciones: la notificación sigue funcionando */ }
     canalCreado = true;
+  }
+
+  // Android 12+: los recordatorios a la hora exacta necesitan un permiso
+  // aparte que la persona concede en los ajustes del sistema.
+  async function estadoAlarmasExactas() {
+    if (!(Plat.nativo && Plat.LN && Plat.LN.checkExactNotificationSetting)) return null;
+    try { return (await Plat.LN.checkExactNotificationSetting()).exact_alarm; } catch (e) { return null; }
+  }
+  async function pedirAlarmasExactas() {
+    if (!(Plat.nativo && Plat.LN && Plat.LN.changeExactNotificationSetting)) return null;
+    try { return (await Plat.LN.changeExactNotificationSetting()).exact_alarm; } catch (e) { return null; }
+  }
+
+  // Resumen para el widget de la pantalla de inicio (lo lee AldiaWidget.java).
+  async function actualizarWidget() {
+    if (!(Plat.nativo && Plat.Prefs)) return;
+    const hoy = Fechas.hoy();
+    const res = Datos.tarjetas.map((t) => Calc.resumen(t, hoy));
+    const pend = res.filter((s) => s.proximoPago.tipo === "corte" && s.proximoPago.monto > 0)
+      .sort((a, b) => (a.proximoPago.fecha < b.proximoPago.fecha ? -1 : 1));
+    const tot = Calc.totales(res);
+    const u = pend[0];
+    const datos = {
+      discreto: !!Datos.ajustes.discreto,
+      fecha: u ? u.proximoPago.fecha : "",
+      tarjeta: u ? u.t.nombre + (u.t.ultimos4 ? ` •${u.t.ultimos4}` : "") : "",
+      monto: u ? Datos.dinero(u.proximoPago.monto) : "",
+      detalle: u ? (u.domiciliado ? "Pago domiciliado: revisa tu saldo" : `Mínimo ${Datos.dinero(u.proximoPago.minimo || 0)} · límite ${Fechas.textoFecha(u.proximoPago.fecha)}`) : "",
+      pie: res.length ? `Deuda total ${Datos.dinero(tot.deuda)}${pend.length > 1 ? ` · ${pend.length} pagos pendientes` : ""}` : "Agrega tus tarjetas en Al Día",
+    };
+    try {
+      await Plat.Prefs.set({ key: "aldia.widget", value: JSON.stringify(datos) });
+      if (Plat.Widget) await Plat.Widget.actualizar();
+    } catch (e) { /* sin widget */ }
   }
 
   async function reprogramarNativo() {
@@ -74,7 +115,9 @@
       .map((n) => ({
         id: n.id, title: n.titulo, body: n.cuerpo, largeBody: n.cuerpo,
         schedule: { at: n.at, allowWhileIdle: true },
-        channelId: CANAL, extra: { tarjetaId: n.tarjetaId },
+        channelId: CANAL,
+        actionTypeId: n.acciones ? "PAGO" : undefined,
+        extra: { tarjetaId: n.tarjetaId, corte: n.corte || null, tipo: n.tipo || null, titulo: n.titulo, cuerpo: n.cuerpo },
       }));
     if (notifs.length) await LN.schedule({ notifications: notifs });
     return notifs.length;
@@ -98,6 +141,7 @@
   }
 
   async function reprogramar() {
+    actualizarWidget();
     try {
       if (Plat.nativo && Plat.LN) return await reprogramarNativo();
       avisosWebDeHoy();
@@ -122,7 +166,7 @@
     if (Plat.nativo && Plat.LN) {
       await crearCanal();
       await Plat.LN.schedule({ notifications: [{ id: 7, title: titulo, body: cuerpo, largeBody: cuerpo,
-        schedule: { at: new Date(Date.now() + 4000), allowWhileIdle: true }, channelId: CANAL }] });
+        schedule: { at: new Date(Date.now() + 4000), allowWhileIdle: true }, channelId: CANAL, extra: { prueba: true } }] });
     } else {
       try { new Notification(titulo, { body: cuerpo }); } catch (e) { return "unsupported"; }
     }
@@ -137,8 +181,8 @@
   function alTocar(f) {
     if (!(Plat.nativo && Plat.LN)) return;
     Plat.LN.addListener("localNotificationActionPerformed", (a) => {
-      const extra = a && a.notification && a.notification.extra;
-      f(extra && extra.tarjetaId);
+      const extra = (a && a.notification && a.notification.extra) || {};
+      f({ ...extra, accion: a && a.actionId, id: a && a.notification && a.notification.id });
     });
   }
 
@@ -172,5 +216,6 @@
     return lineas.join("\r\n");
   }
 
-  window.Avisos = { estadoPermiso, pedirPermiso, reprogramar, reprogramarPronto, probar, pendientes, alTocar, ics };
+  window.Avisos = { estadoPermiso, pedirPermiso, reprogramar, reprogramarPronto, probar, pendientes, alTocar, ics,
+    estadoAlarmasExactas, pedirAlarmasExactas, actualizarWidget };
 })();

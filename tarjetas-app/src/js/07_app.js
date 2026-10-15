@@ -17,6 +17,7 @@
   ];
 
   const App = {
+    version: "__VERSION__",
     tab: "inicio",
     pila: [],
     hoy: Fechas.hoy(),
@@ -63,6 +64,11 @@
     },
 
     render(arriba = false) {
+      Calc.opciones.ivaIntereses = Datos.ivaIntereses();
+      Calc.conMemo(() => this._render(arriba));
+    },
+
+    _render(arriba) {
       this.hoy = Fechas.hoy();
       this._res = null;
       const raiz = document.getElementById("app");
@@ -183,6 +189,11 @@
   A.estadoCuenta = (el) => Formularios.formEstado(el.dataset.id, el.dataset.corte);
   A.verMovimiento = (el) => Formularios.formMovimiento({ tarjetaId: el.dataset.id, mid: el.dataset.mid });
   A.ayuda = (el) => Formularios.verAyuda(el.dataset.clave);
+  A.buscar = () => App.abrir("buscar");
+  A.mejorTarjeta = () => Extras.mejorTarjeta();
+  A.meta = (el) => Extras.formMeta(el.dataset.id);
+  A.recurrente = (el) => Extras.formRecurrente(el.dataset.id, el.dataset.rid);
+  A.importarEstado = (el) => Importar.abrir(el.dataset.id, el.dataset.corte);
   A.discreto = () => { Datos.ajustes.discreto = !Datos.ajustes.discreto; Datos.guardar(); };
   A.ejemplo = () => App.cargarEjemplo(false);
   A.consejo = (el) => {

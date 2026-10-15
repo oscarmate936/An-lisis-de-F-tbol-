@@ -21,7 +21,12 @@
     Share: window.capacitorShare && window.capacitorShare.Share,
     StatusBar: window.capacitorStatusBar && window.capacitorStatusBar.StatusBar,
     StatusStyle: window.capacitorStatusBar && window.capacitorStatusBar.Style,
+    App: window.capacitorApp && window.capacitorApp.App,
+    Bio: window.capacitorBiometricAuth && window.capacitorBiometricAuth.BiometricAuth,
   };
+  // Plugin propio del APK (android/.../WidgetPlugin.java) para refrescar el
+  // widget de la pantalla de inicio.
+  Plat.Widget = Plat.nativo && window.capacitorExports ? window.capacitorExports.registerPlugin("AldiaWidget") : null;
 
   const MONEDAS = [
     { c: "MXN", n: "Peso mexicano", l: "es-MX" },
@@ -64,8 +69,16 @@
         moneda: adivinarMoneda(),
         tema: "auto",
         discreto: false,
-        recordatorios: { activos: true, dias: [3, 1, 0], hora: "09:00", corte: true },
+        recordatorios: { activos: true, dias: [3, 1, 0], hora: "09:00", corte: true, estado: true },
         ultimoRespaldo: null,
+        // IVA sobre intereses: en México los bancos cobran 16% de IVA sobre
+        // los intereses; en otros países normalmente no.
+        ivaIntereses: null,
+        presupuestos: { total: null, categorias: {} },
+        seguridad: { pin: null, sal: null, biometria: false, bloquearAlSalir: true },
+        respaldosAuto: true,
+        ultimoSnapshot: null,
+        pospuestos: [],
       },
       tarjetas: [],
     };
@@ -75,7 +88,11 @@
     const d = porDefecto();
     const out = { ...d, ...s, ajustes: { ...d.ajustes, ...(s.ajustes || {}) } };
     out.ajustes.recordatorios = { ...d.ajustes.recordatorios, ...((s.ajustes || {}).recordatorios || {}) };
-    out.tarjetas = (s.tarjetas || []).map((t) => ({ movimientos: [], estados: {}, ...t }));
+    out.ajustes.presupuestos = { ...d.ajustes.presupuestos, ...((s.ajustes || {}).presupuestos || {}) };
+    out.ajustes.presupuestos.categorias = { ...((out.ajustes.presupuestos || {}).categorias || {}) };
+    out.ajustes.seguridad = { ...d.ajustes.seguridad, ...((s.ajustes || {}).seguridad || {}) };
+    if (!Array.isArray(out.ajustes.pospuestos)) out.ajustes.pospuestos = [];
+    out.tarjetas = (s.tarjetas || []).map((t) => ({ movimientos: [], estados: {}, recurrentes: [], ...t }));
     return out;
   }
 
@@ -174,6 +191,79 @@
       this.estado = porDefecto();
       this.estado.ajustes.moneda = moneda;
       this.guardar();
+    },
+
+    // IVA efectivo sobre intereses (si no se eligió, 16% para MXN).
+    ivaIntereses() {
+      const v = this.estado.ajustes.ivaIntereses;
+      return typeof v === "number" ? v : this.estado.ajustes.moneda === "MXN" ? 16 : 0;
+    },
+
+    // Aplica lo que pasa "solo" con el paso de los días: pagos domiciliados
+    // en su fecha límite y cargos recurrentes (suscripciones). Devuelve
+    // cuántos movimientos agregó.
+    aplicarAutomaticos(hoy) {
+      let n = 0;
+      for (const t of this.estado.tarjetas) {
+        for (const p of Calc.domiciliacionesPendientes(t, hoy)) {
+          t.estados[p.corte] = { ...(t.estados[p.corte] || {}), domiciliado: true };
+          if (p.mov) { t.movimientos.push({ id: uid(), ...p.mov }); n++; }
+        }
+        for (const p of Calc.recurrentesPendientes(t, hoy)) {
+          for (const mv of p.movs) { t.movimientos.push({ id: uid(), ...mv }); n++; }
+          p.rc.ultimo = p.ultimo;
+        }
+        // Pospuestos ya vencidos: fuera.
+      }
+      this.estado.ajustes.pospuestos = (this.estado.ajustes.pospuestos || []).filter((x) => x.fecha >= hoy);
+      return n;
+    },
+
+    // ---------- Respaldos automáticos internos ----------
+    // Una copia semanal dentro del propio teléfono (en la app nativa, en su
+    // carpeta privada, que Android sube a la copia de seguridad de Google
+    // si está activada). Se guardan las 6 más recientes.
+    async snapshotSiToca(hoy) {
+      const a = this.estado.ajustes;
+      if (!a.respaldosAuto || !this.estado.tarjetas.length) return false;
+      if (a.ultimoSnapshot && Fechas.diasEntre(a.ultimoSnapshot, hoy) < 7) return false;
+      await this.guardarSnapshot(hoy);
+      a.ultimoSnapshot = hoy;
+      this.guardar(false);
+      return true;
+    },
+    async guardarSnapshot(hoy) {
+      const txt = this.exportar();
+      if (Plat.nativo && Plat.FS) {
+        await Plat.FS.writeFile({ path: `respaldos/aldia-${hoy}.json`, data: txt, directory: Plat.Dir.Data, encoding: Plat.Enc.UTF8, recursive: true });
+        const lista = await this.listarSnapshots();
+        for (const v of lista.slice(6)) await Plat.FS.deleteFile({ path: `respaldos/${v.nombre}`, directory: Plat.Dir.Data }).catch(() => {});
+        return;
+      }
+      let l = [];
+      try { l = JSON.parse(localStorage.getItem("aldia.respaldos") || "[]"); } catch (e) { l = []; }
+      l = [{ fecha: hoy, datos: txt }, ...l.filter((x) => x.fecha !== hoy)].slice(0, 3);
+      try { localStorage.setItem("aldia.respaldos", JSON.stringify(l)); } catch (e) { /* sin espacio */ }
+    },
+    async listarSnapshots() {
+      if (Plat.nativo && Plat.FS) {
+        try {
+          const r = await Plat.FS.readdir({ path: "respaldos", directory: Plat.Dir.Data });
+          return r.files.map((f) => (typeof f === "string" ? f : f.name)).filter((n) => /^aldia-\d{4}-\d{2}-\d{2}\.json$/.test(n))
+            .sort().reverse().map((nombre) => ({ nombre, fecha: nombre.slice(6, 16) }));
+        } catch (e) { return []; }
+      }
+      try { return JSON.parse(localStorage.getItem("aldia.respaldos") || "[]").map((x) => ({ nombre: x.fecha, fecha: x.fecha })); }
+      catch (e) { return []; }
+    },
+    async leerSnapshot(nombre) {
+      if (Plat.nativo && Plat.FS) {
+        const r = await Plat.FS.readFile({ path: `respaldos/${nombre}`, directory: Plat.Dir.Data, encoding: Plat.Enc.UTF8 });
+        return r.data;
+      }
+      const l = JSON.parse(localStorage.getItem("aldia.respaldos") || "[]");
+      const x = l.find((v) => v.fecha === nombre);
+      return x ? x.datos : null;
     },
 
     exportar() {

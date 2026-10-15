@@ -11,7 +11,7 @@
   function eventosEntre(desde, hasta) {
     const out = [];
     for (const t of Datos.tarjetas) out.push(...Calc.eventos(t, desde, hasta, App.hoy));
-    const orden = { pago: 0, corte: 1, mejor: 2 };
+    const orden = { pago: 0, anualidad: 1, corte: 2, recurrente: 3, mejor: 4 };
     return out.sort((a, b) => (a.fecha < b.fecha ? -1 : a.fecha > b.fecha ? 1 : orden[a.tipo] - orden[b.tipo]));
   }
 
@@ -34,6 +34,16 @@
       ic = "tijera"; tono = "info";
       titulo = `Corte · ${t.nombre}`;
       sub = `Lo que compres después se paga hasta el ${F.textoFecha(Calc.fechaLimite(t, Calc.corteDespues(t, ev.fecha)))}`;
+    } else if (ev.tipo === "anualidad") {
+      ic = "alerta"; tono = "aviso";
+      titulo = `Anualidad · ${t.nombre}`;
+      sub = "Llama antes para pedir que te la quiten o bonifiquen";
+      if (t.anualidad && t.anualidad.monto) monto = $m(t.anualidad.monto);
+    } else if (ev.tipo === "recurrente") {
+      ic = "repetir"; tono = "info";
+      titulo = `${ev.rc.desc} · ${t.nombre}`;
+      sub = "Cargo recurrente automático";
+      monto = $m(ev.rc.monto);
     } else {
       ic = "estrella"; tono = "bien";
       titulo = `Mejor día para comprar · ${t.nombre}`;
@@ -79,13 +89,14 @@
       else if (d.some((e) => e.tipo === "pago")) marcas.push("m-pagado");
       if (d.some((e) => e.tipo === "corte")) marcas.push("m-corte");
       if (d.some((e) => e.tipo === "mejor")) marcas.push("m-mejor");
+      if (d.some((e) => e.tipo === "anualidad" || e.tipo === "recurrente")) marcas.push("m-otro");
       const cls = [f < primero || f > ultimo ? "otro" : "", f === hoy ? "hoy" : "", f === estado.sel ? "sel" : ""].join(" ");
       celdas += `<button class="${cls}" data-act="calDia" data-f="${f}" aria-label="${F.textoFechaLarga(f)}${d.length ? `, ${d.length} evento${d.length > 1 ? "s" : ""}` : ""}">
         <span class="num">${F.partes(f).d}</span><span class="marks">${marcas.map((c) => `<i class="${c}"></i>`).join("")}</span></button>`;
     }
 
     const delDia = porDia.get(estado.sel) || [];
-    const prox = eventosEntre(hoy, F.sumarDias(hoy, 35)).filter((e) => e.tipo !== "mejor" || e.fecha === hoy);
+    const prox = eventosEntre(hoy, F.sumarDias(hoy, 35)).filter((e) => (e.tipo !== "mejor" && e.tipo !== "recurrente") || e.fecha === hoy);
 
     return `
       <div class="panel">
@@ -103,6 +114,7 @@
           <span><i class="m-pagado"></i>Pagado</span>
           <span><i class="m-corte"></i>Corte</span>
           <span><i class="m-mejor"></i>Mejor día para comprar</span>
+          <span><i class="m-otro"></i>Anualidad / cargo recurrente</span>
         </div>
       </div>
 

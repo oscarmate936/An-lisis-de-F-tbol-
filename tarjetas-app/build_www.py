@@ -19,23 +19,39 @@ from pathlib import Path
 RAIZ = Path(__file__).parent
 SRC = RAIZ / "src"
 WWW = RAIZ / "www"
-NM = RAIZ / "node_modules" / "@capacitor"
 
-# (archivo en node_modules/@capacitor, nombre en www/vendor)
+NM_RAIZ = RAIZ / "node_modules"
+
+# (archivo en node_modules, nombre en www/vendor), en orden de carga.
 PLUGINS = [
-    ("core/dist/capacitor.js", "capacitor.js"),
-    ("app/dist/plugin.js", "app.js"),
-    ("local-notifications/dist/plugin.js", "local-notifications.js"),
-    ("preferences/dist/plugin.js", "preferences.js"),
-    ("filesystem/dist/plugin.js", "filesystem.js"),
-    ("share/dist/plugin.js", "share.js"),
-    ("status-bar/dist/plugin.js", "status-bar.js"),
-    ("splash-screen/dist/plugin.js", "splash-screen.js"),
+    ("@capacitor/core/dist/capacitor.js", "capacitor.js"),
+    ("@capacitor/app/dist/plugin.js", "app.js"),
+    ("@capacitor/local-notifications/dist/plugin.js", "local-notifications.js"),
+    ("@capacitor/preferences/dist/plugin.js", "preferences.js"),
+    ("@capacitor/filesystem/dist/plugin.js", "filesystem.js"),
+    ("@capacitor/share/dist/plugin.js", "share.js"),
+    ("@capacitor/status-bar/dist/plugin.js", "status-bar.js"),
+    ("@capacitor/splash-screen/dist/plugin.js", "splash-screen.js"),
+    # Su IIFE espera el plugin App en una global llamada `app`.
+    ("@aparajita/capacitor-biometric-auth/dist/plugin.js", "biometric-auth.js"),
+]
+
+# Bibliotecas que se cargan solo cuando se usan (leer PDF / fotos).
+DIFERIDOS = [
+    ("pdfjs-dist/legacy/build/pdf.min.mjs", "pdf/pdf.min.js"),
+    ("pdfjs-dist/legacy/build/pdf.worker.min.mjs", "pdf/pdf.worker.min.js"),
+    ("tesseract.js/dist/tesseract.min.js", "ocr/tesseract.min.js"),
+    ("tesseract.js/dist/worker.min.js", "ocr/worker.min.js"),
+    ("tesseract.js-core/tesseract-core-lstm.wasm.js", "ocr/core/tesseract-core-lstm.wasm.js"),
+    ("tesseract.js-core/tesseract-core-simd-lstm.wasm.js", "ocr/core/tesseract-core-simd-lstm.wasm.js"),
+    ("@tesseract.js-data/spa/4.0.0_best_int/spa.traineddata.gz", "ocr/lang/spa.traineddata.gz"),
 ]
 
 
 def version() -> str:
-    return json.loads((RAIZ / "package.json").read_text(encoding="utf-8"))["version"]
+    # En CI, el flujo de GitHub pasa el número de compilación.
+    import os
+    return os.environ.get("ALDIA_VERSION_NAME") or json.loads((RAIZ / "package.json").read_text(encoding="utf-8"))["version"]
 
 
 def ensamblar(web: bool) -> str:
@@ -45,7 +61,16 @@ def ensamblar(web: bool) -> str:
     js = "\n".join(p.read_text(encoding="utf-8") for p in partes).replace("__VERSION__", version())
     # "</script" dentro del código cerraría la etiqueta antes de tiempo.
     js = js.replace("</script", "<\\/script")
-    cap = "" if web else "\n  ".join(f'<script src="vendor/{dst}"></script>' for _, dst in PLUGINS)
+    if web:
+        cap = "<script>window.ALDIA_VENDOR = {};</script>"
+    else:
+        etiquetas = []
+        for _, dst in PLUGINS:
+            if dst == "biometric-auth.js":
+                etiquetas.append("<script>var app = window.capacitorApp;</script>")
+            etiquetas.append(f'<script src="vendor/{dst}"></script>')
+        etiquetas.append("<script>window.ALDIA_VENDOR = { pdf: true, ocr: true };</script>")
+        cap = "\n  ".join(etiquetas)
     return html.replace("<!--CAPACITOR-->", cap).replace("/*ESTILOS*/", css).replace("/*SCRIPTS*/", js)
 
 
@@ -56,11 +81,13 @@ def main() -> None:
     if not web:
         vendor = WWW / "vendor"
         vendor.mkdir(exist_ok=True)
-        for origen, destino in PLUGINS:
-            o = NM / origen
+        for origen, destino in PLUGINS + DIFERIDOS:
+            o = NM_RAIZ / origen
             if not o.exists():
                 raise SystemExit(f"Falta {o}. Ejecuta `npm install` primero.")
-            shutil.copy2(o, vendor / destino)
+            d = vendor / destino
+            d.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(o, d)
     for icono in ("icon-192.png", "icon-512.png"):
         o = RAIZ / "assets" / icono
         if o.exists():

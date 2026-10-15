@@ -42,6 +42,8 @@
     const v = t || { nombre: "", banco: "", ultimos4: "", red: "visa", color: P.COLORES[Datos.tarjetas.length % P.COLORES.length],
       limite: null, diaCorte: 15, diaPago: 5, modoPago: "dia", diasParaPagar: 20, tasaAnual: null, minimoPct: Calc.MINIMO_PCT_DEFECTO, minimoFijo: null };
     const hoy = App.hoy;
+    const dom = v.domiciliacion || {};
+    const an = v.anualidad || {};
 
     abrirHoja(`
       <form id="fTar" novalidate>
@@ -92,6 +94,24 @@
           <input class="input num" name="tasaAnual" inputmode="decimal" placeholder="Ej. 45" value="${v.tasaAnual ?? ""}">
           <div class="hint">Opcional. Sirve para calcular cuánto te costaría pagar solo el mínimo.</div></label>
 
+        <div class="section-title">Pago y cobros</div>
+        <label class="row between field"><span class="grow"><b>Pago domiciliado</b><div class="small muted">El banco cobra solo desde tu cuenta en la fecha límite.</div></span>
+          <span class="switch"><input type="checkbox" name="domActiva" ${dom.activa ? "checked" : ""}><span></span></span></label>
+        <div id="campoDom" class="field">
+          ${seg("domTipo", [["total", "Total sin intereses"], ["minimo", "Pago mínimo"], ["fijo", "Monto fijo"]], dom.tipo || "total")}
+          <div id="campoDomMonto" style="margin-top:10px">${campoDinero("domMonto", dom.monto, { placeholder: "Monto que se cobra" })}</div>
+          <div class="hint">Registraré ese pago automáticamente en cada fecha límite y en vez de "paga" te avisaré "revisa que tengas saldo".</div>
+        </div>
+        <div class="field"><span class="lbl">Anualidad (opcional)</span>
+          <div class="grid2">
+            <select class="input" name="anMes"><option value="">Sin anualidad</option>${F.MESES.map((n, i) => `<option value="${i + 1}" ${an.mes === i + 1 ? "selected" : ""}>${n.replace(/^./, (c) => c.toUpperCase())}</option>`).join("")}</select>
+            <select class="input" name="anDia">${opcionesDias(an.dia || 1)}</select>
+          </div>
+          <div style="margin-top:10px">${campoDinero("anMonto", an.monto, { placeholder: "Monto de la anualidad (opcional)" })}</div>
+          <div class="hint">Te aviso 30 y 7 días antes para que pidas que te la quiten.</div></div>
+        <label class="field"><span class="lbl">Presupuesto de gasto por periodo (opcional)</span>${campoDinero("presupuesto", v.presupuesto, { placeholder: "Sin límite" })}
+          <div class="hint">Te aviso cuando, entre un corte y otro, gastes el 80% de esta cantidad.</div></label>
+
         <details class="acc" style="box-shadow:none;background:var(--surface-2);margin-bottom:16px">
           <summary>Opciones avanzadas <span class="chev">${icono("abajo", 18)}</span></summary>
           <div class="body">
@@ -102,6 +122,8 @@
             </div>
             <label class="row between"><span>Avisarme el día de corte</span>
               <span class="switch"><input type="checkbox" name="recordatorioCorte" ${v.recordatorioCorte === false ? "" : "checked"}><span></span></span></label>
+            <label class="row between" style="margin-top:12px"><span class="grow">Sumar intereses estimados<div class="tiny faint">Si no pagas el total del corte, agrego a tu deuda los intereses que probablemente cobrará el banco, hasta que captures el estado de cuenta real.</div></span>
+              <span class="switch"><input type="checkbox" name="interesesAuto" ${v.interesesAuto === false ? "" : "checked"}><span></span></span></label>
           </div>
         </details>
 
@@ -115,6 +137,9 @@
         const val = (n) => f.elements[n].value;
         const actualizar = () => {
           const modo = val("modoPago");
+          el.querySelector("#campoDom").classList.toggle("hide", !f.elements.domActiva.checked);
+          el.querySelector("#campoDomMonto").classList.toggle("hide", val("domTipo") !== "fijo");
+          f.elements.anDia.disabled = !val("anMes");
           el.querySelector("#campoDiaPago").classList.toggle("hide", modo !== "dia");
           el.querySelector("#campoDias").classList.toggle("hide", modo !== "dias");
           const tmp = { diaCorte: +val("diaCorte"), diaPago: +val("diaPago"), modoPago: modo, diasParaPagar: parseInt(val("diasParaPagar"), 10) || 20 };
@@ -158,7 +183,15 @@
             diaCorte: +val("diaCorte"), diaPago: +val("diaPago"), modoPago: modo, diasParaPagar: modo === "dias" ? dias : null,
             tasaAnual: tasa, minimoPct: pct >= 0 && pct <= 100 ? pct : Calc.MINIMO_PCT_DEFECTO,
             minimoFijo: leer(val("minimoFijo")), recordatorioCorte: f.elements.recordatorioCorte.checked,
+            interesesAuto: f.elements.interesesAuto.checked,
+            presupuesto: leer(val("presupuesto")) || null,
+            anualidad: val("anMes") ? { mes: +val("anMes"), dia: +val("anDia"), monto: leer(val("anMonto")) } : null,
           };
+          const domActiva = f.elements.domActiva.checked;
+          if (domActiva && val("domTipo") === "fijo" && !(leer(val("domMonto")) > 0)) { aviso("Escribe el monto fijo que se domicilia"); return; }
+          datos.domiciliacion = domActiva
+            ? { activa: true, tipo: val("domTipo"), monto: leer(val("domMonto")), desde: dom.activa && dom.desde ? dom.desde : hoy }
+            : (dom.activa ? { ...dom, activa: false } : null);
           if (nueva) {
             datos.fechaInicial = hoy;
             datos.saldoInicial = leer(val("saldoInicial")) || 0;
@@ -192,6 +225,11 @@
     const mv = mid ? t.movimientos.find((m) => m.id === mid) : null;
     if (mv) tipo = mv.tipo === "pago" ? "pago" : mv.tipo === "msi" ? "msi" : "cargo";
     const v = mv || { monto: null, fecha: App.hoy, desc: "", categoria: tipo === "pago" ? null : "compras", meses: 12 };
+    // Compras en otra moneda (p. ej. en dólares): se guarda el monto
+    // original y el tipo de cambio; la deuda se lleva en la moneda local.
+    const local = Datos.ajustes.moneda;
+    const monedasCompra = [local, ...["USD", "EUR"].filter((c) => c !== local)];
+    const monedaIni = (mv && mv.monedaOriginal) || local;
 
     abrirHoja(`
       <form id="fMov" novalidate>
@@ -200,6 +238,15 @@
         ${tarjetas.length > 1 && !mv ? `<label class="field"><span class="lbl">Tarjeta</span>
           <select class="input" name="tarjeta">${tarjetas.map((x) => `<option value="${x.id}" ${x.id === t.id ? "selected" : ""}>${esc(x.nombre)}${x.ultimos4 ? " •" + esc(x.ultimos4) : ""}</option>`).join("")}</select></label>`
           : `<input type="hidden" name="tarjeta" value="${t.id}">`}
+        <div class="field" id="campoMoneda"><span class="lbl">Moneda de la compra</span>
+          <div class="chips" data-seg="monedaOrig">${monedasCompra.map((c) => `<button type="button" class="chip ${c === monedaIni ? "on" : ""}" data-v="${c}">${c === local ? `${c} (la de tu tarjeta)` : c}</button>`).join("")}</div>
+          <input type="hidden" name="monedaOrig" value="${monedaIni}"></div>
+        <div class="grid2 hide" id="campoExtranjera">
+          <label class="field"><span class="lbl" id="lblOrig">Monto en USD</span>${campoDinero("montoOrig", mv && mv.montoOriginal)}</label>
+          <label class="field"><span class="lbl">Tipo de cambio</span><input class="input num" name="tc" inputmode="decimal" value="${esc((mv && mv.tipoCambio) || "")}" placeholder="Ej. 18.50"></label>
+        </div>
+        <div class="hide small" id="filaTc" style="margin:-6px 0 12px"><button type="button" class="link" data-tc>${icono("dolar", 15, 'style="vertical-align:-3px"')} Consultar tipo de cambio de hoy</button>
+          <span class="faint" id="tcInfo"></span></div>
         <label class="field"><span class="lbl" id="lblMonto">Monto</span>${campoDinero("monto", v.monto, { autofocus: !mv })}</label>
         <div class="chips field" id="atajos"></div>
         <div class="field" id="campoMeses"><span class="lbl">¿A cuántos meses?</span>
@@ -221,13 +268,26 @@
       alMontar(el) {
         const f = el.querySelector("form");
         const val = (n) => f.elements[n].value;
+        let escribiendoMonto = false;
         const actualizar = () => {
           t = Datos.tarjeta(val("tarjeta"));
           const tp = val("tipo");
           const s = App.res(t.id);
           el.querySelector("#campoMeses").classList.toggle("hide", tp !== "msi");
           el.querySelector("#campoCat").classList.toggle("hide", tp === "pago");
-          el.querySelector("#lblMonto").textContent = tp === "pago" ? "¿Cuánto pagaste?" : tp === "msi" ? "Precio total de la compra" : "¿Cuánto gastaste?";
+          const mon = val("monedaOrig");
+          const ext = mon !== local && tp !== "pago";
+          el.querySelector("#campoMoneda").classList.toggle("hide", tp === "pago");
+          el.querySelector("#campoExtranjera").classList.toggle("hide", !ext);
+          el.querySelector("#filaTc").classList.toggle("hide", !ext);
+          el.querySelector("#lblOrig").textContent = `Monto en ${mon}`;
+          if (ext) {
+            const tcGuardado = (Datos.ajustes.tiposCambio || {})[mon];
+            if (!f.elements.tc.value && tcGuardado) f.elements.tc.value = tcGuardado;
+            const mo = leer(val("montoOrig")), tc = parseFloat(String(val("tc")).replace(",", "."));
+            if (mo > 0 && tc > 0 && !escribiendoMonto) f.elements.monto.value = (Math.round(mo * tc * 100) / 100).toFixed(Datos.decimales());
+          }
+          el.querySelector("#lblMonto").textContent = tp === "pago" ? "¿Cuánto pagaste?" : ext ? `Equivale en ${local} (tu tarjeta)` : tp === "msi" ? "Precio total de la compra" : "¿Cuánto gastaste?";
           const at = el.querySelector("#atajos");
           if (tp === "pago" && !mv) {
             const ops = [];
@@ -252,9 +312,26 @@
           const meses = +val("meses");
           el.querySelector("#cuota").textContent = monto > 0 ? `Pagarás ${Datos.dinero(monto / meses)} al mes durante ${meses} meses.` : "";
         };
+        const actualizarPista = () => { escribiendoMonto = true; actualizar(); escribiendoMonto = false; };
         cablearSegmentos(el, actualizar);
-        f.addEventListener("input", actualizar);
+        f.addEventListener("input", (e) => { if (e.target.name !== "monto") actualizar(); else actualizarPista(); });
         f.addEventListener("change", actualizar);
+        el.querySelector("[data-tc]").addEventListener("click", async () => {
+          const mon = val("monedaOrig");
+          const info = el.querySelector("#tcInfo");
+          info.textContent = " Consultando…";
+          try {
+            const r = await fetch(`https://open.er-api.com/v6/latest/${mon}`);
+            const j = await r.json();
+            const tc = j && j.rates && j.rates[local];
+            if (!tc) throw new Error("sin dato");
+            f.elements.tc.value = String(Math.round(tc * 10000) / 10000);
+            info.textContent = ` 1 ${mon} = ${tc.toFixed(4)} ${local}. Tu banco puede usar uno un poco distinto.`;
+            actualizar();
+          } catch (err) {
+            info.textContent = " No pude consultarlo (¿sin internet?). Escríbelo a mano: aparece en tu estado de cuenta o en la app del banco.";
+          }
+        });
         el.querySelector("#atajos").addEventListener("click", (e) => {
           const b = e.target.closest("[data-monto]");
           if (!b) return;
@@ -282,6 +359,16 @@
           const tp = val("tipo");
           const datos = { tipo: tp, monto, fecha, desc: val("desc").trim() };
           if (tp !== "pago") datos.categoria = val("categoria");
+          const mon = val("monedaOrig");
+          if (tp !== "pago" && mon !== local) {
+            const mo = leer(val("montoOrig")), tc = parseFloat(String(val("tc")).replace(",", "."));
+            if (!(mo > 0) || !(tc > 0)) { aviso(`Escribe el monto en ${mon} y el tipo de cambio`); return; }
+            Object.assign(datos, { montoOriginal: mo, monedaOriginal: mon, tipoCambio: tc });
+            Datos.ajustes.tiposCambio = { ...(Datos.ajustes.tiposCambio || {}), [mon]: tc };
+          } else if (mv && mv.monedaOriginal) {
+            Object.assign(datos, { montoOriginal: undefined, monedaOriginal: undefined, tipoCambio: undefined });
+          }
+          const presAntes = tp !== "pago" ? Calc.estadoPresupuesto(Datos.tarjetas, Datos.ajustes.presupuestos, App.hoy) : null;
           if (tp === "msi") datos.meses = +val("meses");
           if (fecha < t.fechaInicial) {
             aviso("Esa fecha es anterior a cuando registraste la tarjeta: ya está incluida en tu deuda inicial", 4200);
@@ -300,7 +387,11 @@
             if (tp === "pago") {
               const s = App.res(t.id);
               aviso(s.ec.estado === "pagado" ? "¡Pago registrado! Estado de cuenta cubierto ✓" : "Pago registrado");
-            } else aviso(tp === "msi" ? "Compra a meses registrada" : "Compra registrada");
+            } else {
+              const alerta = presAntes && Presupuesto.revisarTrasCompra(presAntes);
+              if (alerta) aviso(`⚠️ ${alerta}`, 5000, { accion: "Ver", alAccionar: () => App.acciones.verPresupuesto() });
+              else aviso(tp === "msi" ? "Compra a meses registrada" : "Compra registrada");
+            }
           }
         });
       },
@@ -325,6 +416,7 @@
       <form id="fEst" novalidate>
         <h2>Capturar estado de cuenta</h2>
         <p class="lead">Copia estos datos de tu estado de cuenta o de la app de tu banco. Así los montos dejan de ser estimados y se corrigen intereses o comisiones. Deja vacío lo que no tengas. ${ayuda("estadoCuenta")}</p>
+        <button type="button" class="btn sec block" data-act="importarEstado" data-id="${t.id}" data-corte="${corte}" style="margin-bottom:16px">${icono("recibo", 18)} Leer de PDF, foto o texto</button>
         <label class="field"><span class="lbl">Corte</span>
           <select class="input" name="corte">${cortes.map((x) => `<option value="${x}" ${x === corte ? "selected" : ""}>Corte del ${F.textoFecha(x, { anio: true })} · pagar antes del ${F.textoFecha(Calc.fechaLimite(t, x))}</option>`).join("")}</select></label>
         <label class="field"><span class="lbl">Pago para no generar intereses ${ayuda("noIntereses")}</span>${campoDinero("pagoNoIntereses", e.pagoNoIntereses, { placeholder: "Estimado: " + ph(est.noInt) })}</label>

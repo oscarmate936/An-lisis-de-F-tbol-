@@ -18,6 +18,11 @@ jobs:
     defaults:
       run:
         working-directory: tarjetas-app
+    env:
+      # Android solo instala una actualización encima si su versionCode es
+      # mayor: el número de ejecución crece en cada compilación.
+      ALDIA_VERSION_CODE: ${{ github.run_number }}
+      ALDIA_VERSION_NAME: 1.1.${{ github.run_number }}
     steps:
       - name: Descargar el repositorio
         uses: actions/checkout@v4
@@ -41,14 +46,20 @@ jobs:
           # Gradle descarga solo la plataforma y build-tools que necesite.
           packages: "platform-tools"
 
-      - name: Instalar dependencias de Capacitor
+      - name: Instalar dependencias
         run: npm ci
 
-      - name: Pruebas del motor de cálculo
+      - name: Pruebas del motor de cálculo y del lector de estados de cuenta
         run: npm test
 
       - name: Ensamblar la app (src/ -> www/)
         run: python3 build_www.py
+
+      - name: Chromium para las pruebas de pantallas
+        run: npx playwright install --with-deps chromium
+
+      - name: Pruebas de pantallas (navegador)
+        run: node --test --test-concurrency=1 tests/e2e/app.e2e.js
 
       - name: Sincronizar el proyecto nativo
         run: npx cap sync android
@@ -56,14 +67,7 @@ jobs:
       - name: Dar permiso de ejecución a gradlew
         run: chmod +x android/gradlew
 
-      - name: Fijar la versión del APK
-        # run_number crece en cada ejecución: Android necesita un versionCode
-        # creciente para reconocer que un APK es más nuevo que otro.
-        run: |
-          sed -i "s/versionCode 1$/versionCode ${{ github.run_number }}/" android/app/build.gradle
-          sed -i "s/versionName \"1.0\"/versionName \"1.0.${{ github.run_number }}\"/" android/app/build.gradle
-
-      - name: Compilar el APK de depuración
+      - name: Compilar el APK
         working-directory: tarjetas-app/android
         run: ./gradlew assembleDebug --no-daemon
 
@@ -73,3 +77,88 @@ jobs:
           name: al-dia-tarjetas-apk
           path: tarjetas-app/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+      # ---------- Versión firmada para Google Play (opcional) ----------
+      # Solo corre si se configuraron los secretos ALDIA_KEYSTORE_BASE64,
+      # ALDIA_KEYSTORE_PASSWORD, ALDIA_KEY_ALIAS y ALDIA_KEY_PASSWORD en
+      # GitHub (Settings → Secrets and variables → Actions). Ver README.
+      - name: ¿Hay clave de publicación?
+        id: firma
+        env:
+          KS: ${{ secrets.ALDIA_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KS" ]; then echo "si=true" >> "$GITHUB_OUTPUT"; else echo "si=false" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Compilar la versión de publicación firmada (APK + AAB)
+        if: steps.firma.outputs.si == 'true'
+        working-directory: tarjetas-app/android
+        env:
+          KS: ${{ secrets.ALDIA_KEYSTORE_BASE64 }}
+          ALDIA_RELEASE_STORE_PASSWORD: ${{ secrets.ALDIA_KEYSTORE_PASSWORD }}
+          ALDIA_RELEASE_KEY_ALIAS: ${{ secrets.ALDIA_KEY_ALIAS }}
+          ALDIA_RELEASE_KEY_PASSWORD: ${{ secrets.ALDIA_KEY_PASSWORD }}
+        run: |
+          echo "$KS" | base64 -d > "$RUNNER_TEMP/aldia-release.keystore"
+          export ALDIA_RELEASE_KEYSTORE="$RUNNER_TEMP/aldia-release.keystore"
+          ./gradlew assembleRelease bundleRelease --no-daemon
+          rm -f "$ALDIA_RELEASE_KEYSTORE"
+
+      - name: Publicar la versión firmada
+        if: steps.firma.outputs.si == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: al-dia-tarjetas-publicacion
+          path: |
+            tarjetas-app/android/app/build/outputs/apk/release/app-release.apk
+            tarjetas-app/android/app/build/outputs/bundle/release/app-release.aab
+
+  # Instala el APK real en un emulador de Android, lo abre con la
+  # autoprueba (aldia://autoprueba) y revisa en el registro del sistema que
+  # la interfaz y los plugins nativos respondan. Si el emulador falla por
+  # algo ajeno a la app, el APK ya quedó publicado en el paso anterior.
+  emulador:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Descargar el APK
+        uses: actions/download-artifact@v4
+        with:
+          name: al-dia-tarjetas-apk
+
+      - name: Activar KVM (aceleración del emulador)
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Probar en el emulador (Android 14)
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: |
+            adb install -r app-debug.apk
+            adb shell pm grant com.aldia.tarjetas android.permission.POST_NOTIFICATIONS || true
+            adb logcat -c
+            adb shell am start -W -a android.intent.action.VIEW -d "aldia://autoprueba" com.aldia.tarjetas
+            sleep 25
+            adb exec-out screencap -p > captura-emulador.png || true
+            adb logcat -d > logcat.txt || true
+            grep -E "Capacitor/Console|chromium|AndroidRuntime|ALDIA" logcat.txt | tail -200 || true
+            grep -q "ALDIA_AUTOPRUEBA" logcat.txt
+            ! grep "ALDIA_AUTOPRUEBA" logcat.txt | grep -q '"ERROR"'
+            ! grep -q "FATAL EXCEPTION" logcat.txt
+
+      - name: Guardar captura y registro del emulador
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: emulador-captura
+          path: |
+            captura-emulador.png
+            logcat.txt
+          if-no-files-found: ignore

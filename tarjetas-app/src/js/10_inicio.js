@@ -44,7 +44,7 @@
       return peso(pa) - peso(pb) || (pa.fecha < pb.fecha ? -1 : pa.fecha > pb.fecha ? 1 : 0);
     });
     const urgente = pagos.find((s) => s.proximoPago.tipo === "corte" && s.proximoPago.estado !== "pagado");
-    const cs = Calc.consejos(res, hoy);
+    const cs = Calc.consejos(res, hoy, (x) => Datos.dinero(x));
 
     let destacado = "";
     if (urgente) {
@@ -96,6 +96,7 @@
         <button class="btn ghost" data-act="nuevaCompra">${icono("compra", 19)} Compra</button>
         <button class="btn ghost" data-act="nuevoPago">${icono("pago", 19)} Pago</button>
       </div>
+      ${Extras.panelMejorTarjeta()}
 
       ${destacado}
 
@@ -121,7 +122,7 @@
         <div class="section-title">Para ti</div>
         <div class="tip bien"><span class="ticon">${icono("okCirculo", 20)}</span><span class="grow"><div class="ttl">Todo en orden</div><div class="txt">No tienes pagos urgentes ni alertas. ¡Sigue así!</div></span></div>`}
 
-      <div class="section-title">Este periodo</div>
+      <div class="section-title">Este periodo <button class="link" data-act="verHistorial">Historial</button></div>
       <div class="kpis">
         <div class="kpi"><div class="k">Gastado desde el último corte</div><div class="v">${$m(res.reduce((a, s) => a + s.gastoCiclo, 0))}</div><div class="s">En todas tus tarjetas</div></div>
         <div class="kpi"><div class="k">Por pagar en cortes cerrados</div><div class="v">${$m(tot.porPagar)}</div><div class="s">Mínimo: ${$m(tot.minimo)}</div></div>
@@ -129,7 +130,7 @@
   }
 
   function todosConsejos() {
-    const cs = Calc.consejos(App.resumenes(), App.hoy);
+    const cs = Calc.consejos(App.resumenes(), App.hoy, (x) => Datos.dinero(x));
     UI.abrirHoja(`<h2>Recomendaciones</h2><p class="lead">Ordenadas de más a menos urgente.</p>${cs.map(P.consejo).join("")}`);
   }
 
@@ -137,7 +138,7 @@
     tab: true,
     titulo: () => `${saludo()}`,
     sub: () => F.textoFechaLarga(App.hoy).replace(/^./, (c) => c.toUpperCase()),
-    acciones: () => `<button class="icon-btn" data-act="abrir" data-v="ajustes" aria-label="Ajustes">${icono("ajustes", 22)}</button>`,
+    acciones: () => `${Datos.tarjetas.length ? `<button class="icon-btn" data-act="buscar" aria-label="Buscar movimientos">${icono("buscar", 22)}</button>` : ""}<button class="icon-btn" data-act="abrir" data-v="ajustes" aria-label="Ajustes">${icono("ajustes", 22)}</button>`,
     html,
   });
   App.accion("todosConsejos", todosConsejos);

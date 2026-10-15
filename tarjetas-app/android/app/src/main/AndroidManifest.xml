@@ -22,7 +22,28 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- aldia://... (p. ej. aldia://autoprueba, que usa la prueba en emulador de CI) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="aldia" />
+            </intent-filter>
+
         </activity>
+
+        <!-- Widget de la pantalla de inicio con el próximo pago -->
+        <receiver
+            android:name=".AldiaWidget"
+            android:exported="true"
+            android:label="Al Día · Próximo pago">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_aldia_info" />
+        </receiver>
 
         <provider
             android:name="androidx.core.content.FileProvider"
@@ -38,4 +59,8 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Recordatorios a la hora exacta (Android 12+). Si la persona no lo
+         concede, Android los entrega igual pero puede retrasarlos. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 </manifest>

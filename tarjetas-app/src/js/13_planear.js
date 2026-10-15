@@ -292,17 +292,21 @@
   App.registrar("planear", {
     tab: true,
     titulo: () => "Planear",
-    sub: () => "Simula y organiza tus pagos",
+    sub: () => "Simula, presupuesta y revisa tu historial",
     html: () => `
       <div class="seg" style="margin-bottom:14px" data-modo>
         <button type="button" data-act="planModo" data-v="sim" class="${estado.modo === "sim" ? "on" : ""}">Simulador</button>
-        <button type="button" data-act="planModo" data-v="plan" class="${estado.modo === "plan" ? "on" : ""}">Salir de deudas</button>
+        <button type="button" data-act="planModo" data-v="plan" class="${estado.modo === "plan" ? "on" : ""}">Deudas</button>
+        <button type="button" data-act="planModo" data-v="pres" class="${estado.modo === "pres" ? "on" : ""}">Presupuesto</button>
+        <button type="button" data-act="planModo" data-v="hist" class="${estado.modo === "hist" ? "on" : ""}">Historial</button>
       </div>
-      ${estado.modo === "sim" ? simHtml() : planHtml()}`,
-    montar: (raiz) => (estado.modo === "sim" ? simMontar(raiz) : planMontar(raiz)),
+      ${estado.modo === "sim" ? simHtml() : estado.modo === "plan" ? planHtml() : estado.modo === "pres" ? Presupuesto.html() : Historial.html()}`,
+    montar: (raiz) => (estado.modo === "sim" ? simMontar(raiz) : estado.modo === "plan" ? planMontar(raiz) : estado.modo === "hist" ? Historial.montar(raiz) : null),
   });
 
   App.accion("planModo", (el) => { estado.modo = el.dataset.v; App.render(); });
+  App.accion("verHistorial", () => { estado.modo = "hist"; App.ir("planear"); });
+  App.accion("verPresupuesto", () => { estado.modo = "pres"; App.ir("planear"); });
   // Si cambian los datos (p. ej. se registra un pago), el simulador vuelve
   // a partir de la deuda real en vez de quedarse con la de antes.
   Datos.alCambiar(() => { estado.sim.saldo = null; estado.plan.presupuesto = null; });

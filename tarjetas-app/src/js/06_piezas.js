@@ -100,6 +100,9 @@
     if (t) sub.push(t.nombre);
     if (mv.tipo === "msi") sub.push(`${mv.meses} meses · ${Datos.dinero(mv.monto / mv.meses)}/mes`);
     else if (!esPago) sub.push(c.n);
+    if (mv.monedaOriginal) sub.push(`${mv.monedaOriginal} ${mv.montoOriginal} × ${mv.tipoCambio}`);
+    if (mv.auto === "domiciliado") sub.push("automático");
+    if (mv.auto === "recurrente") sub.push("recurrente");
     return `<button class="item" data-act="verMovimiento" data-id="${t ? t.id : ""}" data-mid="${mv.id}">
       <span class="ic ${esPago ? "bien" : ""}" style="font-size:18px">${esPago ? icono("pago", 20) : mv.tipo === "msi" ? icono("capas", 20) : c.e}</span>
       <span class="grow"><div class="t1 ellipsis">${esc(titulo)}</div><div class="t2 ellipsis">${esc(sub.join(" · "))}</div></span>
@@ -114,5 +117,14 @@
     </div>`;
   }
 
-  window.Piezas = { COLORES, REDES, CATEGORIAS, cat, plastico, puntoColor, insignia, cajaFecha, tonoPago, medidor, consejo, filaMovimiento, filaInfo, ESTADOS };
+  // Intereses estimados: no son movimientos guardados, se muestran aparte.
+  function filaInteres(x) {
+    return `<div class="item">
+      <span class="ic aviso" style="font-size:18px">🏦</span>
+      <span class="grow"><div class="t1">Intereses estimados</div><div class="t2">${F.textoFecha(x.fecha)} · por lo que faltó pagar del corte del ${F.textoFecha(x.corte)} · aprox.</div></span>
+      <span class="amount">${$m(x.monto)}</span>
+    </div>`;
+  }
+
+  window.Piezas = { filaInteres, COLORES, REDES, CATEGORIAS, cat, plastico, puntoColor, insignia, cajaFecha, tonoPago, medidor, consejo, filaMovimiento, filaInfo, ESTADOS };
 })();

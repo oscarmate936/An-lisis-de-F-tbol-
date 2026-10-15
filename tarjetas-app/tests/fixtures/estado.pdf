@@ -1,0 +1,41 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 339 >>
+stream
+BT /F1 12 Tf 50 750 Td 16 TL
+(BANCO DE PRUEBA - Estado de cuenta) Tj T*
+(Fecha de corte: 03/10/2026) Tj T*
+(Fecha limite de pago: 23/10/2026) Tj T*
+(Pago para no generar intereses: $5,120.40) Tj T*
+(Pago minimo: $410.00) Tj T*
+(Saldo al corte: $14,900.00) Tj T*
+(Limite de credito: $35,000.00) Tj T*
+(Tasa de interes anual: 42.5%) Tj T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000000631 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+728
+%%EOF

@@ -43,6 +43,13 @@
     tendencia: '<path d="m22 17-8.5-8.5-5 5L2 7"/><path d="M16 17h6v-6"/>',
     meta: '<circle cx="12" cy="12" r="9.5"/><circle cx="12" cy="12" r="5.5"/><circle cx="12" cy="12" r="1.5"/>',
     bombilla: '<path d="M9 18h6M10 21.5h4"/><path d="M12 2.5a6.5 6.5 0 0 0-4 11.6c.6.5 1 1.3 1 2.1V16h6v-.8c0-.8.4-1.6 1-2.1A6.5 6.5 0 0 0 12 2.5Z"/>',
+    buscar: '<circle cx="11" cy="11" r="7"/><path d="m20.5 20.5-4.5-4.5"/>',
+    huella: '<path d="M12 11v3a8 8 0 0 1-1.5 4.7"/><path d="M8.5 6.5A6 6 0 0 1 18 11v2"/><path d="M6 10a6 6 0 0 1 .7-2.8"/><path d="M6 14v-3"/><path d="M9 14v-3a3 3 0 0 1 6 0v1"/><path d="M15 16a12 12 0 0 1-1 4"/><path d="M18 16.5a16 16 0 0 1-.5 3"/>',
+    repetir: '<path d="M17 2.5 20.5 6 17 9.5"/><path d="M3.5 11V9.5A3.5 3.5 0 0 1 7 6h13.5"/><path d="M7 21.5 3.5 18 7 14.5"/><path d="M20.5 13v1.5A3.5 3.5 0 0 1 17 18H3.5"/>',
+    banco: '<path d="M3 10h18L12 3.5Z"/><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8"/><path d="M3 21h18"/>',
+    alcancia: '<path d="M19 9.5c1 .6 1.5 1.5 1.5 2.5H22v4h-2.1a7 7 0 0 1-2.4 2.7V21h-3v-1.5h-4V21h-3v-2.8A7 7 0 0 1 4 12a7 7 0 0 1 7-7h3.5l3-2v4.2"/><circle cx="15.5" cy="11" r=".8"/>',
+    foto: '<path d="M3 8a2 2 0 0 1 2-2h2.5L9 3.5h6L16.5 6H19a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><circle cx="12" cy="13" r="4"/>',
+    dolar: '<path d="M12 2v20"/><path d="M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
     candado: '<rect x="4" y="10.5" width="16" height="11" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/>',
   };
 
@@ -102,12 +109,23 @@
 
   const hayHoja = () => !!hoja;
 
-  function aviso(texto, ms = 2600) {
+  // Aviso breve; con `accion` muestra un botón (p. ej. "Deshacer").
+  function aviso(texto, ms = 2600, { accion, alAccionar } = {}) {
     document.querySelectorAll(".toast").forEach((t) => t.remove());
     const t = document.createElement("div");
     t.className = "toast";
     t.setAttribute("role", "status");
-    t.textContent = texto;
+    const span = document.createElement("span");
+    span.textContent = texto;
+    t.append(span);
+    if (accion) {
+      const b = document.createElement("button");
+      b.className = "toast-btn";
+      b.textContent = accion;
+      b.addEventListener("click", () => { t.remove(); alAccionar && alAccionar(); });
+      t.append(b);
+      ms = Math.max(ms, 6000);
+    }
     document.body.append(t);
     setTimeout(() => t.remove(), ms);
   }

@@ -81,10 +81,16 @@
     }
 
     const diasLim = F.diasEntre(hoy, ec.limite);
+    const an = Calc.proximaAnualidad(t, hoy);
 
     return `
       ${P.plastico(t, s, { boton: false })}
       ${t.archivada ? `<div class="tip aviso" style="margin-top:12px"><span class="ticon">${icono("archivo", 20)}</span><span class="grow"><div class="ttl">Tarjeta archivada</div><div class="txt">No recibes recordatorios de esta tarjeta. Reactívala desde el menú ⋮.</div></span></div>` : ""}
+
+      ${s.domiciliado || t.meta || t.presupuesto ? `<div class="chips" style="margin-top:12px">
+        ${s.domiciliado ? `<span class="badge info">${icono("banco", 14)} Pago domiciliado (${{ total: "total", minimo: "mínimo", fijo: "monto fijo" }[t.domiciliacion.tipo] || "total"})</span>` : ""}
+        ${t.meta ? `<span class="badge bien">${icono("meta", 14)} Meta: ${F.textoFecha(t.meta.fecha, { anio: true })}</span>` : ""}
+      </div>` : ""}
 
       <div class="btn-row three" style="margin-top:14px">
         <button class="btn ghost sm" data-act="nuevaCompra" data-id="${id}">${icono("compra", 18)} Compra</button>
@@ -114,11 +120,14 @@
         ` : ""}
       </div>
 
+      ${metaHtml(t, s)}
+
       <div class="section-title">Fechas clave</div>
       <div class="panel">
         ${P.filaInfo("Próximo corte", F.textoFecha(s.proxCorte, { semana: true }), { clave: "corte", sub: F.textoRelativo(s.proxCorte, hoy) })}
         ${P.filaInfo("Se paga hasta", F.textoFecha(Calc.fechaLimite(t, s.proxCorte), { semana: true }), { clave: "limite" })}
         ${P.filaInfo("Mejor día para comprar", F.textoFecha(s.mejorDia, { semana: true }), { clave: "mejorDia", sub: `${s.diasMax} días para pagar`, fuerte: true })}
+        ${an ? P.filaInfo("Anualidad", F.textoFecha(an, { anio: true }), { clave: "anualidad", sub: `${F.textoRelativo(an, hoy)}${t.anualidad.monto ? " · " + Datos.dinero(t.anualidad.monto) : ""}` }) : ""}
         <div class="small muted" style="padding-top:6px;border-top:1px solid var(--border);margin-top:4px">
           ${icono("info", 15, 'style="vertical-align:-3px;margin-right:4px"')} Si compras hoy, lo pagas hasta el <b>${F.textoFecha(Calc.fechaLimite(t, Calc.corteDeCompra(t, hoy)))}</b> (${s.diasHoy} días).
         </div>
@@ -134,6 +143,21 @@
         ${P.filaInfo("Límite", $m(t.limite))}
         ${P.filaInfo("Tasa anual", t.tasaAnual != null ? `${t.tasaAnual}%` : `<button class="link" data-act="editarTarjeta" data-id="${id}">Agregar</button>`, { clave: "tasa" })}
       </div>
+
+      ${t.presupuesto > 0 ? `
+      <div class="section-title">Presupuesto del periodo</div>
+      <div class="panel">
+        <div class="row between small"><span>Gastado desde el corte del ${F.textoFecha(s.ultimoCorte)}</span><span><b class="num">${$m(s.gastoCiclo)}</b> <span class="faint">de ${$m(t.presupuesto, true)}</span></span></div>
+        <div style="margin-top:8px">${P.medidor(Math.min(1, s.gastoCiclo / t.presupuesto), s.gastoCiclo >= t.presupuesto ? "critico" : s.gastoCiclo >= t.presupuesto * 0.8 ? "aviso" : "bien")}</div>
+      </div>` : ""}
+
+      <div class="section-title">Cargos recurrentes <button class="link" data-act="recurrente" data-id="${id}">${icono("mas", 15, 'style="vertical-align:-3px"')} Agregar</button></div>
+      ${(t.recurrentes || []).length ? `<div class="list">${t.recurrentes.map((rc) => `
+        <button class="item" data-act="recurrente" data-id="${id}" data-rid="${rc.id}">
+          <span class="ic info">${icono("repetir", 20)}</span>
+          <span class="grow"><div class="t1 ellipsis">${esc(rc.desc)}</div><div class="t2">${rc.activo === false ? "Pausado" : `Cada día ${rc.dia} · próximo ${F.textoFecha(Calc.proximoRecurrente(rc, hoy))}`}</div></span>
+          <span class="amount">${$m(rc.monto)}</span>
+        </button>`).join("")}</div>` : `<div class="panel small muted">Suscripciones o pagos que se cargan solos cada mes (streaming, gimnasio, teléfono). Se registran automáticamente.</div>`}
 
       ${s.planes.length ? `
       <div class="section-title">Compras a meses</div>
@@ -158,6 +182,8 @@
       </div>` : ""}
 
       <div class="section-title">Movimientos ${movs.length > 8 ? `<button class="link" data-act="abrir" data-v="movimientos" data-id="${id}">Ver todos (${movs.length})</button>` : ""}</div>
+      ${s.intereses.length ? `<div class="list" style="margin-bottom:10px">${s.intereses.slice(-3).reverse().map(P.filaInteres).join("")}</div>
+        <p class="tiny faint" style="margin:-4px 2px 10px">Los intereses estimados desaparecen en cuanto capturas el estado de cuenta de ese corte (que trae el cobro real).</p>` : ""}
       ${movs.length ? `<div class="list">${movs.slice(0, 8).map((mv) => P.filaMovimiento(mv)).join("").replace(/data-id=""/g, `data-id="${id}"`)}</div>` :
         `<div class="panel small muted center">Aún no registras compras ni pagos. Usa los botones de arriba para que tu deuda esté siempre al día.</div>`}
 
@@ -171,6 +197,24 @@
         </button>`).join("")}</div>` : ""}
 
       <p class="tiny faint center" style="margin-top:18px">Registrada el ${F.textoFecha(t.fechaInicial, { anio: true })} con una deuda de ${esc(Datos.dinero(t.saldoInicial || 0))}.</p>`;
+  }
+
+  function metaHtml(t, s) {
+    if (!t.meta) {
+      if (s.deuda <= 0) return "";
+      return `<button class="panel row" data-act="meta" data-id="${t.id}" style="width:100%;border:0;text-align:left;margin-top:12px">
+        <span class="ic" style="width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--good-soft);color:var(--good)">${icono("meta", 20)}</span>
+        <span class="grow"><b>Fijar una meta para liquidarla</b><div class="small muted">Te digo cuánto pagar cada mes para terminar a tiempo.</div></span>${icono("derecha", 18)}</button>`;
+    }
+    const m = Calc.planMeta(t, App.hoy, s.deuda);
+    return `<div class="section-title">Meta <button class="link" data-act="meta" data-id="${t.id}">Cambiar</button></div>
+      <div class="panel">
+        <div class="row between"><b>Liquidar antes del ${F.textoFecha(t.meta.fecha, { anio: true })}</b>
+          <span class="badge ${m.alcanzada ? "bien" : m.vencida ? "critico" : "info"}">${m.alcanzada ? "¡Lograda! 🎉" : m.vencida ? "Fecha pasada" : `${Math.round(m.progreso * 100)}%`}</span></div>
+        <div style="margin:10px 0">${P.medidor(m.progreso, "bien")}</div>
+        <div class="small muted">${m.alcanzada ? "Ya no debes nada en esta tarjeta." : m.vencida ? "La fecha de tu meta ya pasó. Elige una nueva." :
+          `Paga <b style="color:var(--text)">${esc(Datos.dinero(m.pagoMensual))}</b> al mes durante ${m.meses} mes${m.meses === 1 ? "" : "es"} y evita compras nuevas en esta tarjeta.`}</div>
+      </div>`;
   }
 
   App.registrar("tarjeta", {

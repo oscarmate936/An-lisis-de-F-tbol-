@@ -192,3 +192,107 @@ test("consejos: avisa de pago vencido primero", () => {
   assert.equal(cs[0].nivel, "critico");
   assert.ok(cs.some((c) => c.titulo.includes("90%")));
 });
+
+test("intereses estimados: lo que no se paga del corte genera un cargo en el siguiente", () => {
+  C.opciones.ivaIntereses = 0;
+  const t = tarjeta({ fechaInicial: "2026-08-20", tasaAnual: 48,
+    movimientos: [{ id: "a", tipo: "cargo", monto: 1000, fecha: "2026-09-01" },
+      { id: "p", tipo: "pago", monto: 400, fecha: "2026-10-01" }] });
+  // corte 15 sep: 1000; pagó 400 antes del 5 oct → faltan 600 → 600 × 4% = 24 al corte del 15 oct
+  const cargos = C.cargosInteres(t, "2026-10-20");
+  assert.equal(cargos.length, 1);
+  assert.equal(cargos[0].fecha, "2026-10-15");
+  assert.equal(cargos[0].monto, 24);
+  assert.equal(C.saldoAl(t, "2026-10-20"), 624);
+  // con IVA del 16%
+  C.opciones.ivaIntereses = 16;
+  assert.equal(C.cargosInteres(t, "2026-10-20")[0].monto, 27.84);
+  C.opciones.ivaIntereses = 0;
+  // si se captura el estado de cuenta del 15 oct, manda el saldo real
+  t.estados["2026-10-15"] = { saldoCorte: 630 };
+  assert.equal(C.cargosInteres(t, "2026-10-20").length, 0);
+  assert.equal(C.saldoAl(t, "2026-10-20"), 630);
+  // sin tasa o desactivado, no hay cargos
+  assert.equal(C.cargosInteres({ ...t, estados: {}, interesesAuto: false }, "2026-10-20").length, 0);
+});
+
+test("domiciliación: registra el pago en la fecha límite una sola vez", () => {
+  const t = tarjeta({ fechaInicial: "2026-08-20", domiciliacion: { activa: true, tipo: "total", desde: "2026-08-20" },
+    movimientos: [{ id: "a", tipo: "cargo", monto: 1500, fecha: "2026-09-01" }] });
+  assert.equal(C.domiciliacionesPendientes(t, "2026-10-04").length, 0);
+  const p = C.domiciliacionesPendientes(t, "2026-10-05");
+  assert.equal(p.length, 1);
+  assert.equal(p[0].mov.monto, 1500);
+  assert.equal(p[0].mov.fecha, "2026-10-05");
+  t.estados[p[0].corte] = { domiciliado: true };
+  assert.equal(C.domiciliacionesPendientes(t, "2026-10-06").length, 0);
+  t.domiciliacion.tipo = "minimo";
+  t.estados = {};
+  assert.equal(C.domiciliacionesPendientes(t, "2026-10-06")[0].mov.monto, 75);
+});
+
+test("recurrentes: genera los cargos de cada mes desde la última vez", () => {
+  const t = tarjeta({ recurrentes: [{ id: "r", desc: "Streaming", monto: 199, dia: 10, desde: "2026-08-01", ultimo: null }] });
+  const p = C.recurrentesPendientes(t, "2026-10-15");
+  assert.deepEqual(p[0].movs.map((m) => m.fecha), ["2026-08-10", "2026-09-10", "2026-10-10"]);
+  t.recurrentes[0].ultimo = p[0].ultimo;
+  assert.equal(C.recurrentesPendientes(t, "2026-10-20").length, 0);
+  assert.equal(C.recurrentesPendientes(t, "2026-11-10")[0].movs.length, 1);
+  // día 31 en meses cortos
+  const t2 = tarjeta({ recurrentes: [{ id: "r", monto: 10, dia: 31, desde: "2027-01-31" }] });
+  assert.deepEqual(C.recurrentesPendientes(t2, "2027-03-31")[0].movs.map((m) => m.fecha), ["2027-01-31", "2027-02-28", "2027-03-31"]);
+});
+
+test("meta, anualidad, presupuesto y mejor tarjeta", () => {
+  const t = tarjeta({ tasaAnual: 0, meta: { fecha: "2027-03-31", saldoInicial: 6000 } });
+  const m = C.planMeta(t, "2026-10-15", 6000);
+  assert.equal(m.meses, 6);
+  assert.equal(m.pagoMensual, 1000);
+  assert.equal(C.planMeta(t, "2026-10-15", 3000).progreso, 0.5);
+  assert.equal(C.planMeta(t, "2026-10-15", 0).alcanzada, true);
+
+  const a = tarjeta({ anualidad: { mes: 3, dia: 1, monto: 900 } });
+  assert.equal(C.proximaAnualidad(a, "2026-10-15"), "2027-03-01");
+  assert.equal(C.proximaAnualidad(a, "2027-03-01"), "2027-03-01");
+
+  const g = tarjeta({ movimientos: [
+    { id: "1", tipo: "cargo", monto: 300, fecha: "2026-10-02", categoria: "super" },
+    { id: "2", tipo: "cargo", monto: 200, fecha: "2026-10-05", categoria: "comida" },
+    { id: "3", tipo: "cargo", monto: 999, fecha: "2026-09-30", categoria: "super" },
+    { id: "4", tipo: "pago", monto: 100, fecha: "2026-10-05" }] });
+  const ep = C.estadoPresupuesto([g], { total: 1000, categorias: { super: 400 } }, "2026-10-15");
+  assert.equal(ep.total.gastado, 500);
+  assert.equal(ep.categorias[0].c, "super");
+  assert.equal(ep.categorias[0].pct, 0.75);
+
+  const t1 = tarjeta({ id: "x", nombre: "X", diaCorte: 14, diaPago: 4, limite: 10000 });
+  const t2 = tarjeta({ id: "y", nombre: "Y", diaCorte: 1, diaPago: 21, limite: 10000 });
+  const rank = C.mejorTarjetaHoy([C.resumen(t1, "2026-10-15"), C.resumen(t2, "2026-10-15")], "2026-10-15");
+  assert.equal(rank[0].s.t.id, "x"); // cortó ayer: ~50 días
+  assert.ok(rank[0].dias > rank[1].dias);
+});
+
+test("notificaciones: domiciliada, estado de cuenta y anualidad", () => {
+  const t = tarjeta({ fechaInicial: "2026-08-01", domiciliacion: { activa: true, tipo: "total" },
+    anualidad: { mes: 12, dia: 1 },
+    movimientos: [{ id: "a", tipo: "cargo", monto: 1000, fecha: "2026-10-01" }] });
+  const aj = { recordatorios: { dias: [3, 1, 0], hora: "09:00", corte: true }, pospuestos: [] };
+  const plan = C.planNotificaciones([t], aj, "2026-10-16", (x) => `$${x}`);
+  assert.ok(plan.some((n) => n.titulo.includes("domiciliado")));
+  assert.ok(!plan.some((n) => n.titulo.startsWith("💳")));
+  assert.ok(plan.some((n) => n.tipo === "estado" && n.fecha === "2026-10-18"));
+  assert.ok(plan.some((n) => n.titulo.includes("anualidad") && n.fecha === "2026-11-01"));
+  const pos = { id: 5, fecha: "2026-10-17", hora: "09:00", titulo: "x", cuerpo: "y", tarjetaId: "t1" };
+  assert.ok(C.planNotificaciones([t], { ...aj, pospuestos: [pos] }, "2026-10-16", String).some((n) => n.id === 5));
+});
+
+test("historial mensual de deuda y gasto", () => {
+  const t = tarjeta({ fechaInicial: "2026-08-01", saldoInicial: 500, tasaAnual: 0,
+    movimientos: [{ id: "a", tipo: "cargo", monto: 300, fecha: "2026-09-10", categoria: "super" },
+      { id: "p", tipo: "pago", monto: 500, fecha: "2026-10-03" }] });
+  const h = C.historial([t], "2026-10-15", 6);
+  assert.deepEqual(h.map((x) => x.ym), ["2026-08", "2026-09", "2026-10"]);
+  assert.equal(h[1].deuda, 800);
+  assert.equal(h[1].gasto, 300);
+  assert.equal(h[2].pagos, 500);
+});
